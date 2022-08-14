@@ -1,3 +1,6 @@
+def weighted_func(M, func):
+    return np.multiply(M, func(M))
+
 def normalized(x, func, condition=None):
     ''' IMF behavior depending on whether or not it has been normalized '''
     if condition:
@@ -35,7 +38,6 @@ def normalization(IMF, M, lower_lim, upper_lim, **kwargs) -> (float, float):
                                     epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
     def weighted_IMF(m, x):
         return m * IMF(m) * k(x)
-    #weighted_IMF = lambda m: m * IMF(m)
     func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x,), 
                                     epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
     sol = optimize.root_scalar(func, bracket=[lower_lim, upper_lim], rtol=1e-8)
@@ -44,10 +46,12 @@ def normalization(IMF, M, lower_lim, upper_lim, **kwargs) -> (float, float):
 
 def normalization_IMF(IMF, M, lower_lim, upper_lim, alpha_3):
     '''duplicate of normalization !!!!!!! '''
-    k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(alpha_3,))[0])
+    k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(alpha_3,), 
+                                epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
     def weighted_IMF(m, x, alpha_3):
         return m * IMF(m, alpha_3=alpha_3) * k(x)
-    func = lambda x: integr.quad(weighted_IMF, lower_lim, x, args=(x,alpha_3))[0] - M
-    sol = optimize.root_scalar(func, bracket=[lower_lim, upper_lim])
+    func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x,alpha_3), 
+                                    epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
+    sol = optimize.root_scalar(func, bracket=[self.m_star_min, self.m_star_max], rtol=1e-8)
     m_max = sol.root
     return k(m_max), m_max

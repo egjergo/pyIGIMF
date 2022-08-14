@@ -5,29 +5,23 @@ import scipy.integrate as integr
 import pandas as pd
 
 class IMF:
-    #def __init__(self, mass_metals: float, mass_gas: float, 
-    #             M_pgal: float, downsizing_time: float, t: float) -> None:
-    def __init__(self) -> None:
+    
+    def __init__(self, mass_metals: float, mass_gas: float, 
+                 M_igal: float) -> None: #, downsizing_time: float, t: float) -> None:
         self.delta_t = 1e7 # [yr] duration of SF epoch
         self.solar_metallicity = 0.0142
         self.delta_alpha = 63 # (page 3)
-        self.m_star_max = 150 # [Msun] stellar mass upper limit, Yan et al. (2017)
+        self.m_star_max = 150. # [Msun] stellar mass upper limit, Yan et al. (2017)
         self.m_star_min = 0.08 # [Msun]
         self.M_ecl_max = 1e10 # [Msun] most-massive ultra-compact-dwarf galaxy.
         self.M_ecl_min = 5 # [Msun] !!!! I've taken the lower limit from Eq. (8)
-        self.mass_metals: float = 1e7 # [Msun]
-        self.mass_gas: float = 1e9 # [Msun]
-        self.M_pgal: float = 1e10 # [Msun]
-        self.downsizing_time: float = 10 # [yr] 
-        self.t: float = 1 # [Gyr]
+        self.M_igal = M_igal # [Msun]
         
-        #self.M_pgal = M_pgal # [Msun]
-        #self.downsizing_time = downsizing_time # [yr]
-        
-        #self.metal_mass_fraction = self.metal_mass_fraction_func(mass_metals, mass_gas)
-        #self.SFR = 2 #self.SFR_func() # [Msun/yr] star_formation_rate
-        #self.alpha_1 = self.alpha_1_func()
-        #self.alpha_2 = self.alpha_2_func()
+        self.downsizing_time = self.delta_tau(M_igal) # [yr]
+        self.metal_mass_fraction = self.metal_mass_fraction_func(mass_metals, mass_gas)
+        self.SFR = self.SFR_func() #2 # [Msun/yr] star_formation_rate
+        self.alpha_1 = float(self.alpha_1_func())
+        self.alpha_2 = float(self.alpha_2_func())
     
     def execute_normalization(self, IMF, M, lower_lim, upper_lim): 
         k, m_max = u.normalization(IMF, M, lower_lim, upper_lim)

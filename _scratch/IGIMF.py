@@ -36,23 +36,26 @@ class IGIMF:
 
     #def __init__(self, mass_metals, mass_gas, star_formation_rate, t):
     def __init__(self, mass_metals: float, mass_gas: float, 
-                 M_pgal: float, downsizing_time: float, t: float) -> None:
+                 M_igal: float) -> None: #, downsizing_time: float, t: float) -> None:
         self.delta_t = 1e7 # [yr] duration of SF epoch
         self.solar_metallicity = 0.0142
         self.delta_alpha = 63 # (page 3)
-        self.m_star_max = 150 # [Msun] stellar mass upper limit, Yan et al. (2017)
+        self.m_star_max = 150. # [Msun] stellar mass upper limit, Yan et al. (2017)
         self.m_star_min = 0.08 # [Msun]
         self.M_ecl_max = 1e10 # [Msun] most-massive ultra-compact-dwarf galaxy.
         self.M_ecl_min = 5 # [Msun] !!!! I've taken the lower limit from Eq. (8)
-        self.M_pgal = M_pgal # [Msun]
-        self.downsizing_time = downsizing_time # [yr]
+        self.M_igal = M_igal # [Msun]
+        self.downsizing_time = self.delta_tau(M_igal) # [yr]
         
         self.metal_mass_fraction = self.metal_mass_fraction_func(mass_metals, mass_gas)
-        self.SFR = 2 #self.SFR_func() # [Msun/yr] star_formation_rate
-        self.alpha_1 = self.alpha_1_func()
-        self.alpha_2 = self.alpha_2_func()
+        self.SFR = self.SFR_func() #2 # [Msun/yr] star_formation_rate
+        self.alpha_1 = float(self.alpha_1_func())
+        self.alpha_2 = float(self.alpha_2_func())
         #self.alpha_3 = self.alpha_3_func(M_ecl)
         
+    def weighted_func(self, M, func):
+        return np.multiply(M, func(M))
+
     def normalized(self, x, func, condition=None):
         ''' IMF behavior depending on whether or not it has been normalized '''
         if condition:
@@ -63,7 +66,7 @@ class IGIMF:
         else:
             return func
         
-    def normalization(self, IMF, M, lower_lim, upper_lim, **kwargs) -> (float, float):
+    def normalization(self, IMF, M, lower_lim, upper_lim, *args, **kwargs) -> (float, float):
         r'''
         Function that extracts k and m_max (blue boxes in the notes)
         IMF:    mass distribution function, i.e. either Eq. (1) or (8)
@@ -86,38 +89,48 @@ class IGIMF:
         .. math::
         `1 = \int_{\mathrm{m_max}}^{{\rm upper_lim}}{\mathrm{IMF}(m,...)} \,\mathrm{d}m`
         '''
-        k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, 
+        k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(args),
                                      epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
-        def weighted_IMF(m, x):
-            return m * IMF(m) * k(x)
-        func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x,), 
+        def weighted_IMF(m, x, *args):
+            return m * IMF(m, *args) * k(x)
+        func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x, *args), 
                                      epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
         sol = optimize.root_scalar(func, bracket=[lower_lim, upper_lim], rtol=1e-8)
         m_max = sol.root
         return k(m_max), m_max
     
-    def normalization_IMF(self, IMF, M, lower_lim, upper_lim, alpha_3):
-        '''duplicate of normalization !!!!!!! '''
-        k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(alpha_3,))[0])
-        def weighted_IMF(m, x, alpha_3):
-            return m * IMF(m, alpha_3=alpha_3) * k(x)
-        func = lambda x: integr.quad(weighted_IMF, lower_lim, x, args=(x,alpha_3))[0] - M
-        sol = optimize.root_scalar(func, bracket=[self.m_star_min, self.m_star_max])
-        m_max = sol.root
-        return k(m_max), m_max
+    # def normalization_IMF(self, IMF, M, lower_lim, upper_lim, alpha_3):
+    #     '''duplicate of normalization !!!!!!! '''
+    #     k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(alpha_3,), 
+    #                                 epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
+    #     def weighted_IMF(m, x, alpha_3):
+    #         return m * IMF(m, alpha_3=alpha_3) * k(x)
+    #     func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x,alpha_3), 
+    #                                  epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
+    #     sol = optimize.root_scalar(func, bracket=[self.m_star_min, self.m_star_max], rtol=1e-8)
+    #     m_max = sol.root
+    #     return k(m_max), m_max
+        
+    def delta_tau(self, M_igal):
+        '''
+        Returns delta tau in Gyr for the downsizing relation as it is expressed in Recchi+09
+        
+        M_igal is expressed in Msun and ranges from 1e6 to 1e12
+        '''
+        return 8.16 * np.e**(-0.556 * np.log10(M_igal) + 3.401) + 0.027
         
     def SFR_func(self):
-        '''SFR assuming the downsizing time (Thomas et al., 2005)
-        Recchi+09'''
-        return np.divide(self.M_pgal, self.downsizing_time)
+        '''SFR [Msun/yr] assuming the downsizing time (Thomas et al., 2005)'''
+        return np.divide(self.M_igal, self.delta_tau(self.M_igal) * 1e9)
     
     def metal_mass_fraction_func(self, mass_metals, mass_gas):
         r"""$Z$
         Metallicity defined as the mass fraction between metals and hydrogen"""
-        return np.divide(mass_metals, mass_gas)
+        return np.divide(mass_metals, mass_gas) #0.0142 
 
     def alpha_1_func(self):
         r"""Eq. (4) pt.1"""
+        # 1.3 + 63 * (1e7/1e9- 0.0142)
         return 1.3 + self.delta_alpha * (self.metal_mass_fraction - self.solar_metallicity)
     
     def alpha_2_func(self):
@@ -160,7 +173,7 @@ class IGIMF:
     def stellar_IMF(self, M_ecl, ECMF_weight=None):
         r"""Eq. (1) Returns the stellar IMF xi: $\xi_* = d N_* / d m $"""
         alpha_3 = self.alpha_3_func(M_ecl)
-        k_star, m_max = self.normalization_IMF(self.initial_mass_function, M_ecl, 
+        k_star, m_max = self.normalization(self.initial_mass_function, M_ecl, 
                                            self.m_star_min, self.m_star_max, alpha_3)
         if ECMF_weight:
             IMF_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max) * ECMF_weight
@@ -252,22 +265,24 @@ def IMF_3D_plot(m_v, M_ecl_v, sIMF_func):
     plt.savefig(f'IMF_plot_3D.pdf', bbox_inches='tight')
     
     
-def IMF_plot(IMF, M, k, m_max, **kwargs):
-    selfIMF = IGIMF(mass_metals, mass_gas, M_pgal, downsizing_time, t)
+def IMF_plot(m_v, IMF_v, k, m_max, M, name : str, num_colors=1):
     from matplotlib import pyplot as plt
     import matplotlib.ticker as ticker
-    cm = mpl.cm.get_cmap(name='plasma')
+    Msun = r'$M_{\odot}$'
+    cm = plt.cm.get_cmap(name='plasma')
     currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
-    k_ecl, M_max = selfIMF.normalization(selfIMF.embedded_cluster_mass_function, 
-                                      selfIMF.SFR * selfIMF.delta_t, selfIMF.M_ecl_min, selfIMF.M_ecl_max)
-    x = np.logspace(0, m_max)
-    y = [IMF(xi) for xi in x]
     fig, ax = plt.subplots(1,1, figsize=(7,5))
-    ax.loglog(x,y)
-    ax.set_ylabel(IMF.__qualname__, fontsize=15)
-    ax.set_xlabel(r'Mass $\[M_{\odot}\]$', fontsize=15)
+    ax.loglog(m_v,IMF_v, linewidth=3, color='darkblue')
+    ax.set_ylabel(name, fontsize=15)
+    ax.set_xlabel(f'Mass {Msun}', fontsize=15)
+    plt.title(f'{M = :.2e} {Msun}', fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.xticks(fontsize=15)
+    ax.tick_params(width=2)
     fig.tight_layout()
-    plt.savefig(f'IMF_plot_{IMF.__qualname__}.pdf', bbox_inches='tight')
+    plt.savefig(f'IMF_plot_{name}.pdf', bbox_inches='tight')
+    #plt.show(block=False)
+    return None
 
 def Fig11_plot():
     from matplotlib import pyplot as plt
