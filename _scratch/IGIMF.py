@@ -36,7 +36,7 @@ class IGIMF:
 
     #def __init__(self, mass_metals, mass_gas, star_formation_rate, t):
     def __init__(self, mass_metals: float, mass_gas: float, 
-                 M_igal: float) -> None: #, downsizing_time: float, t: float) -> None:
+                 M_igal: float, suppress_warnings=True) -> None: #, downsizing_time: float, t: float) -> None:
         self.delta_t = 1e7 # [yr] duration of SF epoch
         self.solar_metallicity = 0.0142
         self.delta_alpha = 63 # (page 3)
@@ -49,9 +49,13 @@ class IGIMF:
         
         self.metal_mass_fraction = self.metal_mass_fraction_func(mass_metals, mass_gas)
         self.SFR = self.SFR_func() #2 # [Msun/yr] star_formation_rate
+        self.Mtot = self.SFR * self.delta_t
         self.alpha_1 = float(self.alpha_1_func())
         self.alpha_2 = float(self.alpha_2_func())
         #self.alpha_3 = self.alpha_3_func(M_ecl)
+        if suppress_warnings:
+            import warnings
+            warnings.filterwarnings('ignore')
         
     def weighted_func(self, M, func):
         return np.multiply(M, func(M))
@@ -99,18 +103,7 @@ class IGIMF:
         m_max = sol.root
         return k(m_max), m_max
     
-    # def normalization_IMF(self, IMF, M, lower_lim, upper_lim, alpha_3):
-    #     '''duplicate of normalization !!!!!!! '''
-    #     k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(alpha_3,), 
-    #                                 epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
-    #     def weighted_IMF(m, x, alpha_3):
-    #         return m * IMF(m, alpha_3=alpha_3) * k(x)
-    #     func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x,alpha_3), 
-    #                                  epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
-    #     sol = optimize.root_scalar(func, bracket=[self.m_star_min, self.m_star_max], rtol=1e-8)
-    #     m_max = sol.root
-    #     return k(m_max), m_max
-        
+    # Galaxy functions 
     def delta_tau(self, M_igal):
         '''
         Returns delta tau in Gyr for the downsizing relation as it is expressed in Recchi+09
@@ -128,6 +121,7 @@ class IGIMF:
         Metallicity defined as the mass fraction between metals and hydrogen"""
         return np.divide(mass_metals, mass_gas) #0.0142 
 
+    # stellar IMF functions
     def alpha_1_func(self):
         r"""Eq. (4) pt.1"""
         # 1.3 + 63 * (1e7/1e9- 0.0142)
@@ -181,6 +175,7 @@ class IGIMF:
             IMF_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max)
         return k_star, m_max, IMF_func
 
+    # embedded cluster mass functions
     def beta_func(self):
         r"""Eq. (11) """
         return -0.106 * np.log10(self.SFR) + 2
@@ -197,8 +192,11 @@ class IGIMF:
         k_ecl, M_max = self.normalization(self.embedded_cluster_mass_function,
                                           self.SFR * self.delta_t, self.M_ecl_min, self.M_ecl_max)
         ECMF_func = lambda M_ecl: k_ecl * self.embedded_cluster_mass_function(M_ecl, M_max=M_max)
-        return k_ecl, M_max, ECMF_func
+        ECM_weighted_func = lambda M_ecl: self.weighted_func(M_ecl, ECMF_func)
+        #print(f"The relative error is {np.divide(np.abs(integr.quad(ECMF_weighted_func, self.M_ecl_min, self.M_ecl_max)[0] - self.Mtot), self.Mtot):.3e}")
+        return k_ecl, M_max, ECMF_func, ECM_weighted_func
 
+    # IGIMF functions
     def gwIMF(self, t, resolution=50):
         r"""Eq. (12)"""
         k_ecl, M_max, ECMF_func = self.ECMF()
@@ -206,8 +204,8 @@ class IGIMF:
         sIMF_weighted = pd.DataFrame([self.stellar_IMF(M, ECMF_weight=ECMF_func(M))  for M in M_ecl_v], columns=['kstar', 'm_max', 'func'])
         sIMF = pd.DataFrame([self.stellar_IMF(M)  for M in M_ecl_v], columns=['kstar', 'm_max', 'func'])
         #sIMF['M_ecl'] = M_ecl_v
-        sIMF_func = sIMF['func'].values 
-        ECintegr = integr.simpson([ECMF_func(M) for M in M_ecl_v], x=M_ecl_v)   
+        #sIMF_func = sIMF['func'].values 
+        #ECintegr = integr.simpson([ECMF_func(M) for M in M_ecl_v], x=M_ecl_v)   
         return None
     
     def normalization_test(self):
