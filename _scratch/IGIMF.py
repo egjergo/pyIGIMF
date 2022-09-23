@@ -114,7 +114,7 @@ class IGIMF:
         
     def SFR_func(self):
         '''SFR [Msun/yr] assuming the downsizing time (Thomas et al., 2005)'''
-        return np.divide(self.M_igal, self.delta_tau(self.M_igal) * 1e9)
+        return np.divide(self.M_igal, self.downsizing_time * 1e9)
     
     def metal_mass_fraction_func(self, mass_metals, mass_gas):
         r"""$Z$
@@ -169,11 +169,9 @@ class IGIMF:
         alpha_3 = self.alpha_3_func(M_ecl)
         k_star, m_max = self.normalization(self.initial_mass_function, M_ecl, 
                                            self.m_star_min, self.m_star_max, alpha_3)
-        if ECMF_weight:
-            IMF_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max) * ECMF_weight
-        else:
-            IMF_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max)
-        return k_star, m_max, IMF_func
+        IMF_weighted_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max) * ECMF_weight
+        IMF_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max)
+        return k_star, m_max, IMF_func, IMF_weighted_func, alpha_3
 
     # embedded cluster mass functions
     def beta_func(self):
@@ -192,25 +190,26 @@ class IGIMF:
         k_ecl, M_max = self.normalization(self.embedded_cluster_mass_function,
                                           self.SFR * self.delta_t, self.M_ecl_min, self.M_ecl_max)
         ECMF_func = lambda M_ecl: k_ecl * self.embedded_cluster_mass_function(M_ecl, M_max=M_max)
-        ECM_weighted_func = lambda M_ecl: self.weighted_func(M_ecl, ECMF_func)
+        ECMF_weighted_func = lambda M_ecl: self.weighted_func(M_ecl, ECMF_func)
         #print(f"The relative error is {np.divide(np.abs(integr.quad(ECMF_weighted_func, self.M_ecl_min, self.M_ecl_max)[0] - self.Mtot), self.Mtot):.3e}")
-        return k_ecl, M_max, ECMF_func, ECM_weighted_func
+        return k_ecl, M_max, ECMF_func, ECMF_weighted_func
 
     # IGIMF functions
-    def gwIMF(self, t, resolution=50):
+    def gwIMF(self, resolution=50):
         r"""Eq. (12)"""
-        k_ecl, M_max, ECMF_func = self.ECMF()
-        M_ecl_v = np.logspace(np.log10(self.M_ecl_min), np.log10(self.M_ecl_max), num=resolution)
-        sIMF_weighted = pd.DataFrame([self.stellar_IMF(M, ECMF_weight=ECMF_func(M))  for M in M_ecl_v], columns=['kstar', 'm_max', 'func'])
-        sIMF = pd.DataFrame([self.stellar_IMF(M)  for M in M_ecl_v], columns=['kstar', 'm_max', 'func'])
-        #sIMF['M_ecl'] = M_ecl_v
-        #sIMF_func = sIMF['func'].values 
-        #ECintegr = integr.simpson([ECMF_func(M) for M in M_ecl_v], x=M_ecl_v)   
-        return None
+        k_ecl, M_max, ECMF_func, ECM_weighted_func = self.ECMF()
+        M_ecl_v = np.logspace(np.log10(self.M_ecl_min), np.log10(M_max), num=resolution)
+        ECMF_v = np.array([ECMF_func(M) for M in M_ecl_v])
+        gwIMF_df = pd.DataFrame([self.stellar_IMF(M_ecl_v[i], ECMF_weight=ECMF_v[i])  for i in range(len(M_ecl_v))], columns=['kstar', 'm_max', 'func', 'func_weighted', 'alpha_3'])
+        gwIMF_df['ECMF_v'] = ECMF_v
+        sIMF_func = gwIMF_df['func'].to_numpy()
+        sIMF_v = np.array([sIMF_func[i](ECMF_v[i]) for i in range(len(ECMF_v))])
+        ECintegr = integr.simpson(np.multiply(ECMF_v, sIMF_v), x=M_ecl_v)   
+        return ECintegr#, M_pgal
     
-    def normalization_test(self):
-        [integr.simpson(xi[i],x=m_v) for i,_ in enumerate(M_ecl_v)]
-        return None
+    #def normalization_test(self):
+    #    [integr.simpson(xi[i],x=m_v) for i,_ in enumerate(M_ecl_v)]
+    #    return None
 
 if __name__ == '__main__':
     main()
@@ -285,9 +284,9 @@ def IMF_plot(m_v, IMF_v, k, m_max, M, name : str, num_colors=1):
 def Fig11_plot():
     from matplotlib import pyplot as plt
     import matplotlib.ticker as ticker
-    CMOl = np.loadtxt('data/Capuzzo-dolcetta17CMOl.csv', delimiter=',')
-    CMOu = np.loadtxt('data/Capuzzo-dolcetta17CMOu.csv', delimiter=',')
-    SMBH = np.loadtxt('data/Capuzzo-dolcetta17BH.csv', delimiter=',')
+    CMOl = np.loadtxt('../data/Capuzzo-dolcetta17CMOl.csv', delimiter=',')
+    CMOu = np.loadtxt('../data/Capuzzo-dolcetta17CMOu.csv', delimiter=',')
+    SMBH = np.loadtxt('../data/Capuzzo-dolcetta17BH.csv', delimiter=',')
     fig, ax = plt.subplots(1,1, figsize=(7,5))
     #ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
     #ax.legend(loc='best', frameon=False, fontsize=13)
