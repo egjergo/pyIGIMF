@@ -11,7 +11,7 @@ def normalized(x, func, condition=None):
     else:
         return func
     
-def normalization(IMF, M, lower_lim, upper_lim, **kwargs) -> (float, float):
+def normalization(IMF, M, lower_lim, upper_lim, *args, **kwargs) -> (float, float):
     r'''
     Function that extracts k and m_max (blue boxes in the notes)
     IMF:    mass distribution function, i.e. either Eq. (1) or (8)
@@ -23,6 +23,7 @@ def normalization(IMF, M, lower_lim, upper_lim, **kwargs) -> (float, float):
             of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
     x:      evaluated local upper (lower) limit on the integrals
             of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
+    *args   other required arguments
     **kwargs    optional keyword arguments
     
     -----
@@ -34,11 +35,11 @@ def normalization(IMF, M, lower_lim, upper_lim, **kwargs) -> (float, float):
     .. math::
     `1 = \int_{\mathrm{m_max}}^{{\rm upper_lim}}{\mathrm{IMF}(m,...)} \,\mathrm{d}m`
     '''
-    k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, 
+    k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim,  args=(args),
                                     epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
-    def weighted_IMF(m, x):
-        return m * IMF(m) * k(x)
-    func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x,), 
+    def weighted_IMF(m, x, *args):
+        return m * IMF(m, *args) * k(x)
+    func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x, *args), 
                                     epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
     sol = optimize.root_scalar(func, bracket=[lower_lim, upper_lim], rtol=1e-8)
     m_max = sol.root
