@@ -93,12 +93,10 @@ class IGIMF:
         .. math::
         `1 = \int_{\mathrm{m_max}}^{{\rm upper_lim}}{\mathrm{IMF}(m,...)} \,\mathrm{d}m`
         '''
-        k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(args),
-                                     epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0])
+        k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(args))[0])
         def weighted_IMF(m, x, *args):
             return m * IMF(m, *args) * k(x)
-        func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x, *args), 
-                                     epsrel=1e-8, limit=int(1e3), maxp1=int(1e3), limlst=int(1e3))[0] - M)
+        func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x, *args))[0] - M)
         sol = optimize.root_scalar(func, bracket=[lower_lim, upper_lim], rtol=1e-8)
         m_max = sol.root
         return k(m_max), m_max
@@ -193,11 +191,11 @@ class IGIMF:
         return IMF_func(m) * ECMF_func(M_ecl)
     
     # IGIMF functions
-    def gwIMF(self, resolution=100):
+    def gwIMF(self, resolution=20):
         r"""Eq. (12)"""
         k_ecl, M_max, ECMF_func, ECM_weighted_func = self.ECMF()
-        return lambda m: integr.quad(self.gwIMF_integrand_func, self.M_ecl_min, M_max, args=(m, ECMF_func), epsrel=1e-8, limit=int(1e3), maxp1=int(1e3))[0]   
-
+        #return lambda m: integr.quad(self.gwIMF_integrand_func, self.M_ecl_min, M_max, args=(m, ECMF_func))[0]   
+        return lambda m: integr.quadrature(igimf.gwIMF_integrand_func, igimf.M_ecl_min, M_max, args=(m, ECMF_func), vec_func=False, rtol=1e-5)[0]  
     
 
 if __name__ == '__main__':
