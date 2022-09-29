@@ -30,77 +30,16 @@ import numpy as np
 from scipy import optimize
 import scipy.integrate as integr
 import pandas as pd
+import util
 
-class IGIMF:
-    ''' Computes the Integrated Galaxy-wide Initial Mass Function of stars'''
-
-    #def __init__(self, mass_metals, mass_gas, star_formation_rate, t):
-    def __init__(self, metal_mass_fraction: float, 
-                 M_igal: float, suppress_warnings=True) -> None: #, downsizing_time: float, t: float) -> None:
-        self.delta_t = 1e7 # [yr] duration of SF epoch
-        self.solar_metallicity = 0.0142
-        self.delta_alpha = 63 # (page 3)
-        self.m_star_max = 150. # [Msun] stellar mass upper limit, Yan et al. (2017)
-        self.m_star_min = 0.08 # [Msun]
-        self.M_ecl_max = 1e10 # [Msun] most-massive ultra-compact-dwarf galaxy.
-        self.M_ecl_min = 5 # [Msun] !!!! I've taken the lower limit from Eq. (8)
-        self.metal_mass_fraction = metal_mass_fraction
+class Downsizing:
+    """Downsizing relations as introduced by Thomas et al., (2005)"""
+    
+    def __init__(self, M_igal: float) -> None:
         self.M_igal = M_igal # [Msun]
         self.downsizing_time = self.delta_tau(M_igal) # [yr]
+        self.SFR = self.SFR_func(self.M_igal, self.downsizing_time) # [Msun/yr] star_formation_rate
         
-        self.SFR = self.SFR_func(self.M_igal, self.downsizing_time) #2 # [Msun/yr] star_formation_rate
-        self.Mtot = self.SFR * self.delta_t # Total stellar mass produced at a given delta t timestep
-        self.alpha_1 = float(self.alpha_1_func())
-        self.alpha_2 = float(self.alpha_2_func())
-        if suppress_warnings:
-            import warnings
-            warnings.filterwarnings('ignore')
-        
-    def weighted_func(self, M, func):
-        return np.multiply(M, func(M))
-
-    def normalized(self, x, func, condition=None):
-        ''' IMF behavior depending on whether or not it has been normalized '''
-        if condition:
-            if x <= condition:
-                return func
-            else:
-                return 0.
-        else:
-            return func
-        
-    def normalization(self, IMF, M, lower_lim, upper_lim, *args, **kwargs) -> (float, float):
-        r'''
-        Function that extracts k and m_max (blue boxes in the notes)
-        IMF:    mass distribution function, i.e. either Eq. (1) or (8)
-        M:      value of the integrals in Eq. (2) and (9)
-        k:      normalization of the IMF function, i.e. Eq. (3) and (10)
-        upper_lim and lower_lim:    
-                global upper and lower limits on the integrals
-        guess:  guess on the local upper (lower) limit on the integrals 
-                of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
-        x:      evaluated local upper (lower) limit on the integrals
-                of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
-        *args   other required arguments
-        **kwargs    optional keyword arguments
-        
-        -----
-        
-        .. math::
-        `M = \int_{\mathrm{lower_lim}}^{\mathrm{m_max}}
-        m \, \mathrm{IMF}(m,...)\,\mathrm{d}m`
-        
-        .. math::
-        `1 = \int_{\mathrm{m_max}}^{{\rm upper_lim}}{\mathrm{IMF}(m,...)} \,\mathrm{d}m`
-        '''
-        k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, args=(args))[0])
-        def weighted_IMF(m, x, *args):
-            return m * IMF(m, *args) * k(x)
-        func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, args=(x, *args))[0] - M)
-        sol = optimize.root_scalar(func, bracket=[lower_lim, upper_lim], rtol=1e-8)
-        m_max = sol.root
-        return k(m_max), m_max
-    
     # Galaxy functions 
     def delta_tau(self, M_igal):
         '''
@@ -108,11 +47,36 @@ class IGIMF:
         
         M_igal is expressed in Msun and ranges from 1e6 to 1e12
         '''
-        return 8.16 * np.e**(-0.556 * np.log10(M_igal) + 3.401) + 0.027
-        
+        return 8.16 * np.e**(-0.556 * np.log10(M_igal) + 3.401) + 0.027       
+            
     def SFR_func(self, M_igal, downsizing_time):
         '''SFR [Msun/yr] assuming the downsizing time (Thomas et al., 2005)'''
         return np.divide(M_igal, downsizing_time * 1e9)
+
+class IGIMF:
+    ''' Computes the Integrated Galaxy-wide Initial Mass Function of stars'''
+
+    #def __init__(self, mass_metals, mass_gas, star_formation_rate, t):
+    def __init__(self, metal_mass_fraction: float, SFR: float, 
+                 delta_t=1e7, solar_metallicity=0.0142, delta_alpha=63, 
+                 m_star_max = 150., m_star_min=0.08,  
+                 M_ecl_max = 1e10, M_ecl_min=5, suppress_warnings=True) -> None: #, downsizing_time: float, t: float) -> None:
+        self.delta_t = delta_t # [yr] duration of SF epoch
+        self.solar_metallicity = solar_metallicity
+        self.delta_alpha = delta_alpha # (page 3)
+        self.m_star_max = m_star_max # [Msun] stellar mass upper limit, Yan et al. (2017)
+        self.m_star_min = m_star_min # [Msun]
+        self.M_ecl_max = M_ecl_max # [Msun] most-massive ultra-compact-dwarf galaxy.
+        self.M_ecl_min = M_ecl_min # [Msun] !!!! I've taken the lower limit from Eq. (8)
+        self.metal_mass_fraction = metal_mass_fraction
+        
+        self.SFR = SFR # [Msun/yr] star_formation_rate
+        self.Mtot = self.SFR * self.delta_t # Total stellar mass produced at a given delta t timestep
+        self.alpha_1 = float(self.alpha_1_func())
+        self.alpha_2 = float(self.alpha_2_func())
+        if suppress_warnings:
+            import warnings
+            warnings.filterwarnings('ignore')
 
     # stellar IMF functions
     def alpha_1_func(self):
@@ -153,39 +117,32 @@ class IGIMF:
         elif np.logical_and(m>=0.5, m<1.):
             return m**(-self.alpha_2)
         elif m>=1.:
-            return self.normalized(m, m**(-alpha_3), condition=m_max)
+            return util.normalized(m, m**(-alpha_3), condition=m_max)
         else:
             return 0.
     
     def stellar_IMF(self, M_ecl):
         r"""Eq. (1) Returns the stellar IMF xi: $\xi_* = d N_* / d m $"""
         alpha_3 = self.alpha_3_func(M_ecl)
-        k_star, m_max = self.normalization(self.initial_mass_function, M_ecl, 
-                                           self.m_star_min, self.m_star_max, alpha_3)
-        #IMF_weighted_func = lambda m: m * k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max)
-        IMF_func = lambda m: k_star * self.initial_mass_function(m, alpha_3=alpha_3, m_max=m_max)
-        IMF_weighted_func = lambda m: self.weighted_func(m, IMF_func)
-        return k_star, m_max, IMF_func, IMF_weighted_func, alpha_3
+        return util.get_norm(self.initial_mass_function, M_ecl, 
+                             self.m_star_min, self.m_star_max, alpha_3=alpha_3)
 
     # embedded cluster mass functions
     def beta_func(self):
         r"""Eq. (11) """
         return -0.106 * np.log10(self.SFR) + 2
     
-    def embedded_cluster_mass_function(self, M_ecl, M_max=None):
+    def embedded_cluster_mass_function(self, M_ecl, m_max=None):
         r"""Eq. (8)"""
         if M_ecl>=self.M_ecl_min:
-            return self.normalized(M_ecl, M_ecl**(-self.beta_func()), condition=M_max)
+            return util.normalized(M_ecl, M_ecl**(-self.beta_func()), condition=m_max)
         else:
             return 0.
         
-    def ECMF(self):
+    def ECMF(self, *args, **kwargs):
         '''duplicate of stellar_IMF !!!!!!! '''
-        k_ecl, M_max = self.normalization(self.embedded_cluster_mass_function,
-                                          self.SFR * self.delta_t, self.M_ecl_min, self.M_ecl_max)
-        ECMF_func = lambda M_ecl: k_ecl * self.embedded_cluster_mass_function(M_ecl, M_max=M_max)
-        ECMF_weighted_func = lambda M_ecl: self.weighted_func(M_ecl, ECMF_func)
-        return k_ecl, M_max, ECMF_func, ECMF_weighted_func
+        return util.get_norm(self.embedded_cluster_mass_function, self.SFR * self.delta_t, 
+                             self.M_ecl_min, self.M_ecl_max)
     
     def gwIMF_integrand_func(self, M_ecl, m, ECMF_func):
         k_star, m_max, IMF_func, IMF_weighted_func, alpha_3 = self.stellar_IMF(M_ecl)
