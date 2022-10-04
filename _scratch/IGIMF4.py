@@ -325,7 +325,7 @@ class IGIMF:
         cax = divider.append_axes("right", size="5%", pad="2%")
         ax.set_ylabel(r'$\xi_{IMF}$', fontsize=15)
         ax.set_xlabel(r'$M_{\rm star}$ [%s]' %(Msun), fontsize=15)
-        ax.set_ylim(1e-2,1e8)
+        ax.set_ylim(1e-2,1e10)
         ax.set_title(r"metal mass fraction = %.2e"%(massfrac), fontsize=15)
         ax.tick_params(width=2)
         cbar = fig.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", ticks=ticker.MultipleLocator(1)).set_label(label=r'$\log_{10}(M_{\rm ecl})$',size=15)
@@ -412,6 +412,110 @@ class IGIMF:
         fig.tight_layout()
         #plt.savefig('Fig11.pdf', bbox_inches='tight')
         
+            
+    def k_Z_plot(self, Z_massfrac_v, k_IMF_Z_list, m_max_Z_list, Mecl_v):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+        cm = plt.cm.get_cmap(name='plasma')
+        cm2 = plt.cm.get_cmap(name='plasma')
+        num_colors = len(Z_massfrac_v)
+        Z = [[0,0],[0,0]]
+        #levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), num_colors, endpoint=True)
+        levels = np.linspace(np.log10(Z_massfrac_v[0]/0.0142), np.log10(Z_massfrac_v[-1]/0.0142), 100, endpoint=True)
+        CS3 = plt.contourf(Z, levels, cmap=cm)
+        plt.clf()
+        SFR_colormap = (Z_massfrac_v)#np.log10(np.logspace(np.log10(SFR[0]), np.log10(SFR[-1]), 10, endpoint=True))
+        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
+        currentColor = iter(currentColors)
+        currentColors2 = [cm2(1.*i/num_colors) for i in range(num_colors)]
+        currentColor2 = iter(currentColors2)
+        Msun = r'$M_{\odot}$'
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax2 = ax.twinx()
+        #ax.plot(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
+        #ax.scatter(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
+        for i,Z in enumerate(Z_massfrac_v):
+            #ax.semilogy(Z_massfrac_v - 0.0142, k_IMF_Z_list[i], linewidth=3, color='magenta', alpha=0.4)
+            #ax.scatter(Z_massfrac_v - 0.0142, k_IMF_Z_list[i], linewidth=3, color='magenta', alpha=0.4)
+            color = next(currentColor)
+            ax.plot(np.log10(Mecl_v), np.log10(k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.4)
+            #ax.scatter(Mecl_v, k_IMF_Z_list[i], linewidth=3, color=color, alpha=0.2)
+            color2 = next(currentColor2)
+            ax2.plot(np.log10(Mecl_v), m_max_Z_list[i], linewidth=3, color=color2, alpha=0.4)
+            #ax2.scatter(Mecl_v, m_max_Z_list[i], linewidth=3, color=color2, alpha=0.2)
+        ax.set_ylabel(r'$\log_{10}(k_{\rm IMF})$', fontsize=15)
+        ax2.set_ylabel(r'$m_{\rm max}$', fontsize=15)
+        ax.set_xlabel(r'$\log_{10}(M_{\rm ecl})$[$M_{\odot}$]', fontsize=15)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("top", size="5%", pad="100%")#, pack_start=True)
+        #cax = divider.new_vertical(size="5%", pad=2.6, pack_start=True)
+        fig.add_axes(cax)
+        cbar = fig.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", ticks=ticker.MultipleLocator(1),orientation="horizontal").set_label(label=r'$[Z]$',size=15)
+        cax.xaxis.set_ticks_position("top")
+        cax.xaxis.set_label_position("top")
+        fig.tight_layout()
+        plt.savefig(f'Mecl_vs_k_mmax.pdf', bbox_inches='tight')
+        plt.show(block=False)
+
+
+    def alpha1_Z_plot(self, Z_massfrac_v, alpha1_Z_list):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        Msun = r'$M_{\odot}$'
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        #ax.plot(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
+        #ax.scatter(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
+        ax.plot(Z_massfrac_v- 0.0142, [alpha1_Z_list[i][0] for i in range(len(Z_massfrac_v))], linewidth=3, color='magenta', alpha=0.4)
+        ax.scatter(Z_massfrac_v- 0.0142, [alpha1_Z_list[i][0] for i in range(len(Z_massfrac_v))], linewidth=3, color='magenta', alpha=0.4)
+        ax.set_ylabel(r'$\alpha_1$', fontsize=15)
+        ax.set_xlabel(r'[Z - $Z_{\odot}$]', fontsize=15)
+        ax.axhline(1.3 - 63*0.0142, linestyle=':', color='orange')
+        ax.axhline(1.3 + 63*0.0142, linestyle=':', color='orange')
+        ax.axhline(1.3, linestyle='--', color='orange')
+        ax.axvline(0, linestyle='--', color='orange')
+        ax.plot(Z_massfrac_v - 0.0142, 1.3 + np.arctan(1.3e2*(Z_massfrac_v - 0.0142))/1.3, color='red', linewidth=3)
+        #plt.title(r'SFR = %.2e [%s/yr]' %(self.SFR, Msun), fontsize=15)
+        #ax.set_ylim(5e-2,1e8)
+        #ax.set_xlim(1e-11,1e0)
+        plt.yticks(fontsize=15)
+        plt.xticks(fontsize=15)
+        ax.tick_params(width=2)
+        fig.tight_layout()
+        #plt.savefig(f'Z_plot_{name}.pdf', bbox_inches='tight')
+        plt.show(block=False)
+
+    def get_lists(self):
+        IMF_v_Z_list = []
+        alpha1_Z_list = []
+        alpha1_Z_list = []
+        m_max_Z_list = []
+        k_IMF_Z_list = []
+        for Z in Z_massfrac_v:
+            IMF_v_list = []
+            alpha1_list = []
+            alpha3_list = []
+            m_max_list = []
+            k_IMF_list = []
+            for M in Mecl_v:
+                igimf4 = IGIMF4.IGIMF(Z, downsizing_obj.SFR)
+                sIMF = igimf4.stellar_IMF(M)
+                print (f"M=%.2e,\t alpha1=%.2f,\t alpha2=%.2f,\t alpha3=%.2f,\t m_max = %.2e,\t [Z] = %.2f"%(M, sIMF[4], sIMF[5], sIMF[6], sIMF[1], igimf4.metallicity))
+                #IMF_v = sIMF[2](mstar_v)
+                alpha1_list.append(sIMF[4])
+                alpha3_list.append(sIMF[6])
+                m_max_list.append(sIMF[1])
+                k_IMF_list.append(sIMF[0])
+                IMF_v_list.append(IMF_v)
+                #igimf4.ECMF_plot(Mecl_v, ECMF_v)
+            IMF_v_Z_list.append(IMF_v_list)
+            alpha1_Z_list.append(alpha1_list)
+            alpha3_Z_list.append(alpha3_list)
+            m_max_Z_list.append(m_max_list)
+            k_IMF_Z_list.append(k_IMF_list)
+        return k_IMF_Z_list, m_max_Z_list, IMF_v_Z_list, alpha1_Z_list, alpha1_Z_list
+        
+        
 if __name__ == '__main__':
     main()
 
@@ -432,4 +536,5 @@ def main():
     for i,t in enumerate(gal_time):
         igimf_t = IGIMF(MZ(i), Mgas(i), t)
         k_star_v, k_ecl_v, M_ecl_max_v = igimf_t.solve()
-        
+
+
