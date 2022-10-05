@@ -107,5 +107,5 @@ def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (fl
         m_max = sol.root
     except:
         m_max = upper_lim
-    print(f'{Mtot = },\t {m_max = },\t {k(m_max)=}')
+    #print(f'{Mtot = },\t {m_max = },\t {k(m_max)=}')
     return k(m_max), m_max

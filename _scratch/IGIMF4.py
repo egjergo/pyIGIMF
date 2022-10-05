@@ -82,6 +82,14 @@ class IGIMF:
             warnings.filterwarnings('ignore')
 
     # stellar IMF functions
+    
+    def _alpha_1_func(self):
+        '''Gjergo+22'''
+        maximum = 2 * 1.3
+        midpoint = self.solar_metallicity
+        growth_rate = 2/self.solar_metallicity
+        return np.divide(maximum, 1 + np.exp(-np.multiply(growth_rate, self.metal_mass_fraction - midpoint)))
+    
     def alpha_1_func(self):
         r"""Eq. (4) pt.1"""
         # 1.3 + 63 * (1e7/1e9- 0.0142)
@@ -174,8 +182,10 @@ class IGIMF:
         #return lambda m: integr.quad(self.gwIMF_integrand_func, self.M_ecl_min, M_max, args=(m, ECMF_func))[0]   
         return lambda m: integr.quadrature(igimf.gwIMF_integrand_func, igimf.M_ecl_min, M_max, args=(m, ECMF_func), vec_func=False, rtol=1e-5)[0]  
     
+    
+class Plots:
     # Plotting functions
-    def ECMF_plot(self, Mecl_v, ECMF_v):
+    def ECMF_plot(self, Mecl_v, ECMF_v, SFR):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         Msun = r'$M_{\odot}$'
@@ -184,7 +194,7 @@ class IGIMF:
         ax.scatter(Mecl_v, ECMF_v, linewidth=3, color='navy')
         ax.set_ylabel(r'$\xi_{ECMF}$', fontsize=15)
         ax.set_xlabel(r'$M_{\rm ecl}$ [%s]'%(Msun), fontsize=15)
-        plt.title(r'SFR = %.2e [%s/yr]' %(self.SFR, Msun), fontsize=15)
+        plt.title(r'SFR = %.2e [%s/yr]' %(SFR, Msun), fontsize=15)
         #ax.set_ylim(1e-8,1)
         plt.yticks(fontsize=15)
         plt.xticks(fontsize=15)
@@ -284,7 +294,7 @@ class IGIMF:
         #plt.show(block=False)
         return None
 
-    def IMF_plot(self, Mstar_v, IMF_v, Mtot):
+    def IMF_plot(self, Mstar_v, IMF_v, Mtot, massfrac):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         Msun = r'$M_{\odot}$'
@@ -293,7 +303,7 @@ class IGIMF:
         ax.scatter(Mstar_v, IMF_v, linewidth=3, color='navy')
         ax.set_ylabel(r'$\xi_{IMF}$', fontsize=15)
         ax.set_xlabel(r'$M_{\rm star}$ [%s]'%(Msun), fontsize=15)
-        plt.title(r'$M_{ecl}$ = %.2e [%s/yr],$\quad$ [Z] = %.2f' %(Mtot, Msun, self.metallicity), fontsize=15)
+        plt.title(r'$M_{ecl}$ = %.2e [%s/yr],$\quad$ [Z] = %.2f' %(Mtot, Msun, np.log10(massfrac/0.0142)), fontsize=15)
         #ax.set_ylim(1e-8,1)
         plt.yticks(fontsize=15)
         plt.xticks(fontsize=15)
@@ -330,7 +340,7 @@ class IGIMF:
         ax.tick_params(width=2)
         cbar = fig.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", ticks=ticker.MultipleLocator(1)).set_label(label=r'$\log_{10}(M_{\rm ecl})$',size=15)
         fig.tight_layout()
-        plt.savefig(f'IMF_plots_{self.metallicity:.1f}_mmax{self.m_star_max:.2e}.pdf', bbox_inches='tight')
+        plt.savefig(f'IMF_plots_massfrac{massfrac:.2e}.pdf', bbox_inches='tight')
         #plt.show(block=False)
         return None
         
@@ -378,18 +388,20 @@ class IGIMF:
         num_colors=len(metallicity_v)
         currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
         currentColor = itertools.cycle(currentColors)
+        nrow, ncol = 4, 5 #3, 3
         #fig, axs = plt.subplots(3, 3, figsize=(8,6))
-        fig, axs = plt.subplots(4, 5, figsize=(8,6))
+        fig, axs = plt.subplots(nrow, ncol, figsize=(8,6))
         for i, ax in enumerate(axs.flat):
             for j, Z in enumerate(metallicity_v):
+                ax.axhline(1, linestyle='--', color='magenta', linewidth=1)
                 ax.annotate(r'$M_{ecl}=$%.2e'%(Mecl_v[i]), xy=(0.5, 0.9), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=.1)
                 ax.loglog(mstar_v, sIMF[i][j], color=next(currentColor))
-                ax.set_ylim(5e-3,1e13)
+                ax.set_ylim(5e-3,1e11)
                 ax.set_xlim(2e-2,5e2)
         #for nr in range(3):
-        for nr in range(4):
+        for nr in range(nrow):
             #for nc in range(3):
-            for nc in range(5):
+            for nc in range(ncol):
                 if nc != 0:
                     axs[nr,nc].set_yticklabels([])
                 #if nr != 3-1:
@@ -397,8 +409,8 @@ class IGIMF:
                     axs[nr,nc].set_xticklabels([])
         #axs[1,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
         #axs[2, 1].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
-        axs[4//2,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
-        axs[4-1, 5//2].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
+        axs[nrow-1, ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
         #divider = make_axes_locatable(axs.flat[-1])
         plt.subplots_adjust(bottom=0., right=0.95, top=1.)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
@@ -424,27 +436,29 @@ class IGIMF:
         num_colors=len(Mecl_v)
         currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
         currentColor = itertools.cycle(currentColors)
+        nrow, ncol = 4, 5 #3, 3
         #fig, axs = plt.subplots(3, 3, figsize=(8,6))
-        fig, axs = plt.subplots(4, 5, figsize=(8,6))
+        fig, axs = plt.subplots(nrow, ncol, figsize=(8,6))
         for i, ax in enumerate(axs.flat):
             for j, M in enumerate(Mecl_v):
+                ax.axhline(1, linestyle='--', color='magenta', linewidth=1)
                 ax.annotate(r'$Z=$%.2f'%(metallicity_v[i]), xy=(0.5, 0.9), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=.1)
                 ax.loglog(mstar_v, sIMF[j][i], color=next(currentColor))
-                ax.set_ylim(5e-3,1e13)
+                ax.set_ylim(5e-3,1e11)
                 ax.set_xlim(2e-2,5e2)
         #for nr in range(3):
-        for nr in range(4):
+        for nr in range(nrow):
             #for nc in range(3):
-            for nc in range(5):
+            for nc in range(ncol):
                 if nc != 0:
                     axs[nr,nc].set_yticklabels([])
                 #if nr != 3-1:
-                if nr != 4-1:
+                if nr != nrow-1:
                     axs[nr,nc].set_xticklabels([])
         #axs[1,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
         #axs[2,1].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
-        axs[4//2,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
-        axs[4-1,5//2].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
+        axs[nrow-1,ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
         #divider = make_axes_locatable(axs.flat[-1])
         plt.subplots_adjust(bottom=0., right=0.95, top=1.)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
@@ -591,7 +605,7 @@ class IGIMF:
             for M in Mecl_v:
                 igimf4 = IGIMF4.IGIMF(Z, downsizing_obj.SFR)
                 sIMF = igimf4.stellar_IMF(M)
-                print (f"M=%.2e,\t alpha1=%.2f,\t alpha2=%.2f,\t alpha3=%.2f,\t m_max = %.2e,\t [Z] = %.2f"%(M, sIMF[4], sIMF[5], sIMF[6], sIMF[1], igimf4.metallicity))
+                #print (f"M=%.2e,\t alpha1=%.2f,\t alpha2=%.2f,\t alpha3=%.2f,\t m_max = %.2e,\t [Z] = %.2f"%(M, sIMF[4], sIMF[5], sIMF[6], sIMF[1], igimf4.metallicity))
                 #IMF_v = sIMF[2](mstar_v)
                 alpha1_list.append(sIMF[4])
                 alpha3_list.append(sIMF[6])
