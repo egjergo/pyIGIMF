@@ -122,18 +122,6 @@ class IGIMF:
             return -0.41 * x_alpha_3 + 1.94
         
     def initial_mass_function(self, m, alpha_3=None, m_max=None):
-        # power_law = lambda m, power: m**(-power)
-        # if np.logical_and(m_max >= self.m_star_min, m_max < 0.5):
-        #     return (2 * power_law(m, self.alpha_1))
-        # if np.logical_and(m_max >= 0.5, m_max < 1.):
-        #     return (2 * power_law(m, self.alpha_1)
-        #             + power_law(m, self.alpha_2))
-        # if np.logical_and(m_max >= 1., m_max <= self.m_star_max):
-        #     return (2 * power_law(m, self.alpha_1)
-        #             + power_law(m, self.alpha_2)
-        #             + power_law(m, alpha_3))
-        # else:
-        #     return 0.
         if np.logical_and(m>=self.m_star_min, m<0.5):
             return m**(-self.alpha_1) * 2
         elif np.logical_and(m>=0.5, m<1.):
@@ -171,16 +159,16 @@ class IGIMF:
         ECMF_weighted_func = lambda M_ecl: util.weighted_func(M_ecl, ECMF_func)
         return k_ecl, M_max, np.vectorize(ECMF_func), np.vectorize(ECMF_weighted_func)
     
-    def gwIMF_integrand_func(self, M_ecl, m, ECMF_func):
-        k_star, m_max, IMF_func, IMF_weighted_func, alpha_3 = self.stellar_IMF(M_ecl)
+    def gwIMF_integrand_func(self, M_ecl, ECMF_func, m):
+        k_star, m_max, IMF_func, IMF_weighted_func, alpha_1, alpha_2, alpha_3 = self.stellar_IMF(M_ecl)
         return IMF_func(m) * ECMF_func(M_ecl)
     
     # IGIMF functions
-    def gwIMF(self, resolution=20):
+    def gwIMF(self):
         r"""Eq. (12)"""
         k_ecl, M_max, ECMF_func, ECM_weighted_func = self.ECMF()
         #return lambda m: integr.quad(self.gwIMF_integrand_func, self.M_ecl_min, M_max, args=(m, ECMF_func))[0]   
-        return lambda m: integr.quadrature(igimf.gwIMF_integrand_func, igimf.M_ecl_min, M_max, args=(m, ECMF_func), vec_func=False, rtol=1e-5)[0]  
+        return lambda m: integr.quadrature(self.gwIMF_integrand_func, self.M_ecl_min, M_max, args=(ECMF_func, m), vec_func=False, rtol=1e-15)[0]  
     
     
 class Plots:
@@ -263,6 +251,26 @@ class Plots:
         #plt.savefig(f'Z_plot_{name}.pdf', bbox_inches='tight')
         plt.show(block=False)
         
+    def Migal_plot(self, M_igal_v, SFR, downsizing_time):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        Msun = r'$M_{\odot}$'
+        fig, ax1 = plt.subplots(1,1, figsize=(7,5))
+        ax0 = ax1.twinx()
+        ax0.loglog(M_igal_v, SFR, linewidth=3, color='tab:red')
+        ax0.set_ylabel(f'SFR [{Msun}/yr]', fontsize=15, color='tab:red')
+        ax0.set_xlabel(r'$M_{igal}$ '+f'[{Msun}]', fontsize=15)
+        ax1.semilogx(M_igal_v, downsizing_time, linewidth=3, color='tab:blue')
+        ax1.set_ylabel(r'$\Delta\tau$ [Gyr]', fontsize=15, color='tab:blue')
+        ax1.set_xlabel(r'$M_{igal}$ '+f'[{Msun}]', fontsize=15)
+        #ax.set_ylim(1e-8,1)
+        ax0.tick_params(width=2, axis='both', labelsize=15)
+        ax1.tick_params(width=2, axis='both', labelsize=15)
+        fig.tight_layout()
+        #plt.savefig(f'Z_plot_{name}.pdf', bbox_inches='tight')
+        plt.show(block=False)
+        return None
+        
     def ECMF_plots(self, M_ecl_v, ECMF_v_list, SFR_v):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
@@ -293,7 +301,38 @@ class Plots:
         plt.savefig(f'ECMF_plots.pdf', bbox_inches='tight')
         #plt.show(block=False)
         return None
-
+  
+    def gwIMF_plots(self, star_v, gwIMF_bySFR_eval, SFR_v):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+        Msun = r'$M_{\odot}$'
+        cm = plt.cm.get_cmap(name='magma')
+        num_colors = len(gwIMF_bySFR_eval)
+        Z = [[0,0],[0,0]]
+        #levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), num_colors, endpoint=True)
+        levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), 100, endpoint=True)
+        CS3 = plt.contourf(Z, levels, cmap=cm)
+        plt.clf()
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        SFR_colormap = (SFR_v)#np.log10(np.logspace(np.log10(SFR[0]), np.log10(SFR[-1]), 10, endpoint=True))
+        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
+        currentColor = iter(currentColors)
+        #dummy_cax = ax.scatter(star_v,gwIMF_bySFR_eval[19], linewidth=3, vmin=SFR_colormap[0], vmax=SFR_colormap[-1], c=np.log10(SFR), cmap=cm, alpha=1)
+        for i,gwIMF in enumerate(gwIMF_bySFR_eval):
+            ax.loglog(star_v,gwIMF, linewidth=3, c=next(currentColor))
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad="2%")
+        ax.set_ylabel(r'$\xi_{gwIMF}$', fontsize=15)
+        ax.set_xlabel(r'stellar mass [%s]' %(Msun), fontsize=15)
+        #ax.set_ylim(1e-1,1e5)
+        ax.tick_params(width=2)
+        cbar = fig.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", ticks=ticker.MultipleLocator(1)).set_label(label=r'$\log_{10}({\rm SFR})$',size=15)
+        fig.tight_layout()
+        plt.savefig(f'gwIMF_plots.pdf', bbox_inches='tight')
+        #plt.show(block=False)
+        return None
+    
     def IMF_plot(self, Mstar_v, IMF_v, Mtot, massfrac):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
