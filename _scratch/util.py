@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import optimize
 import scipy.integrate as integr
+from mpmath import mp
     
 def weighted_func(M, func, *args, **kwargs):
     return np.multiply(M, func(M, *args, **kwargs))

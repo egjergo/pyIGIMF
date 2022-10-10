@@ -302,7 +302,7 @@ class Plots:
         #plt.show(block=False)
         return None
   
-    def gwIMF_plots(self, star_v, gwIMF_bySFR_eval, SFR_v):
+    def gwIMF_plots(self, star_v, gwIMF_bySFR_eval, SFR_v, metal_mass_fraction):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -323,13 +323,15 @@ class Plots:
             ax.loglog(star_v,gwIMF, linewidth=3, c=next(currentColor))
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad="2%")
+        metallicity = np.log10(metal_mass_fraction/0.0142)
+        ax.set_title(f'[Z] = {metallicity:.2f}', fontsize=15)
         ax.set_ylabel(r'$\xi_{gwIMF}$', fontsize=15)
         ax.set_xlabel(r'stellar mass [%s]' %(Msun), fontsize=15)
         #ax.set_ylim(1e-1,1e5)
         ax.tick_params(width=2)
         cbar = fig.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", ticks=ticker.MultipleLocator(1)).set_label(label=r'$\log_{10}({\rm SFR})$',size=15)
         fig.tight_layout()
-        plt.savefig(f'gwIMF_plots.pdf', bbox_inches='tight')
+        plt.savefig(f'gwIMF_plots_Z{metallicity:.2f}.pdf', bbox_inches='tight')
         #plt.show(block=False)
         return None
     
@@ -432,7 +434,7 @@ class Plots:
         fig, axs = plt.subplots(nrow, ncol, figsize=(8,6))
         for i, ax in enumerate(axs.flat):
             for j, Z in enumerate(metallicity_v):
-                ax.axhline(1, linestyle='--', color='magenta', linewidth=1)
+                #ax.axhline(1, linestyle='--', color='magenta', linewidth=1)
                 ax.annotate(r'$M_{ecl}=$%.2e'%(Mecl_v[i]), xy=(0.5, 0.9), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=.1)
                 ax.loglog(mstar_v, sIMF[i][j], color=next(currentColor))
                 ax.set_ylim(5e-3,1e11)
@@ -480,8 +482,8 @@ class Plots:
         fig, axs = plt.subplots(nrow, ncol, figsize=(8,6))
         for i, ax in enumerate(axs.flat):
             for j, M in enumerate(Mecl_v):
-                ax.axhline(1, linestyle='--', color='magenta', linewidth=1)
-                ax.annotate(r'$Z=$%.2f'%(metallicity_v[i]), xy=(0.5, 0.9), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=.1)
+                #ax.axhline(1, linestyle='--', color='magenta', linewidth=1)
+                ax.annotate(r'$[Z]=$%.2f'%(metallicity_v[i]), xy=(0.5, 0.9), xycoords='axes fraction', horizontalalignment='center', verticalalignment='top', fontsize=10, alpha=.1)
                 ax.loglog(mstar_v, sIMF[j][i], color=next(currentColor))
                 ax.set_ylim(5e-3,1e11)
                 ax.set_xlim(2e-2,5e2)
@@ -557,7 +559,7 @@ class Plots:
         #plt.savefig('Fig11.pdf', bbox_inches='tight')
         
             
-    def k_Z_plot(self, Z_massfrac_v, k_IMF_Z_list, m_max_Z_list, Mecl_v):
+    def k_Z_plot(self, Z_massfrac_v, k_IMF_Z_list, m_max_Z_list, Mecl_v, m_star_max=150):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
         from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -575,31 +577,31 @@ class Plots:
         currentColors2 = [cm2(1.*i/num_colors) for i in range(num_colors)]
         currentColor2 = iter(currentColors2)
         Msun = r'$M_{\odot}$'
-        fig, ax = plt.subplots(1,1, figsize=(7,5))
-        ax2 = ax.twinx()
+        fig, ax = plt.subplots(2,1, figsize=(5,7))
+        #ax2 = ax.twinx()
         #ax.plot(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
         #ax.scatter(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
         for i,Z in enumerate(Z_massfrac_v):
             color = next(currentColor)
-            ax.plot(np.log10(Mecl_v), np.log10(k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.4)
+            ax[1].semilogx(Mecl_v, np.log10(k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.4)
             #ax.plot((Mecl_v), (k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.4)
             color2 = next(currentColor2)
-            ax2.plot(np.log10(Mecl_v), m_max_Z_list[i], linewidth=3, color=color2, alpha=0.4)
+            ax[0].semilogx(Mecl_v, m_max_Z_list[i], linewidth=3, color=color2, alpha=0.4)
             #ax2.plot((Mecl_v), m_max_Z_list[i], linewidth=3, color=color2, alpha=0.4)
-        ax.set_ylabel(r'$\log_{10}(k_{\rm IMF})$', fontsize=15)
-        ax.set_xlabel(r'$\log_{10}(M_{\rm ecl})$[$M_{\odot}$]', fontsize=15)
+        ax[1].set_ylabel(r'$\log_{10}(k_{\rm IMF})$', fontsize=15)
+        ax[1].set_xlabel(r'$\log_{10}(M_{\rm ecl})$[$M_{\odot}$]', fontsize=15)
         #ax.set_ylabel(r'$k_{\rm IMF}$', fontsize=15)
         #ax.set_xlabel(r'$M_{\rm ecl}$[$M_{\odot}$]', fontsize=15)
-        ax2.set_ylabel(r'$m_{\rm max}$', fontsize=15)
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("top", size="5%", pad="100%")#, pack_start=True)
+        ax[0].set_ylabel(r'$m_{\rm max}$', fontsize=15)
+        divider = make_axes_locatable(ax[0])
+        cax = divider.append_axes("top", size="5%", pad="10%")#, pack_start=True)
         #cax = divider.new_vertical(size="5%", pad=2.6, pack_start=True)
         fig.add_axes(cax)
         cbar = fig.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", ticks=ticker.MultipleLocator(1),orientation="horizontal").set_label(label=r'$[Z]$',size=15)
         cax.xaxis.set_ticks_position("top")
         cax.xaxis.set_label_position("top")
         fig.tight_layout()
-        plt.savefig(f'Mecl_vs_k_mmax.pdf', bbox_inches='tight')
+        plt.savefig(f'Mecl_vs_k_mmax{m_star_max}.pdf', bbox_inches='tight')
         plt.show(block=False)
 
 
