@@ -197,10 +197,6 @@ class IGIMF:
         k_ecl, M_max, ECMF_func, ECM_weighted_func = self.ECMF()
         #return lambda m: integr.quad(self.gwIMF_integrand_func, self.M_ecl_min, M_max, args=(m, ECMF_func))[0]   
         return lambda m: integr.quadrature(igimf.gwIMF_integrand_func, igimf.M_ecl_min, M_max, args=(m, ECMF_func), vec_func=False, rtol=1e-5)[0]  
-    
-
-if __name__ == '__main__':
-    main()
 
 def main():
     directory_name = 'data'
@@ -299,3 +295,6 @@ def Fig11_plot():
     ax.set_xlim(6, 13.7)
     fig.tight_layout()
     plt.savefig('Fig11.pdf', bbox_inches='tight')
+
+if __name__ == '__main__':
+    main()

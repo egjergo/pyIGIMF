@@ -211,9 +211,6 @@ class IGIMF:
     #    [integr.simpson(xi[i],x=m_v) for i,_ in enumerate(M_ecl_v)]
     #    return None
 
-if __name__ == '__main__':
-    main()
-
 def main():
     directory_name = 'data'
     Mass_i = np.loadtxt(galcem_run_dir + directory_name + '/Mass_i.dat')
@@ -311,3 +308,6 @@ def Fig11_plot():
     ax.set_xlim(6, 13.7)
     fig.tight_layout()
     plt.savefig('Fig11.pdf', bbox_inches='tight')
+
+if __name__ == '__main__':
+    main()
