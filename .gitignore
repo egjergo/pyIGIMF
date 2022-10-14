@@ -130,3 +130,6 @@ dmypy.json
 
 # MISC
 *.DS_Store
+
+# dev
+_ags.md
