@@ -139,11 +139,11 @@ class StellarIMFbyZbyMecl(SingleStellarIMF):
     def __init__(self, SFR, M_ecl=1e5, metal_mass_fraction=0.1*0.0134,
                  compute_IMF_by_Z=False):
         super().__init__(M_ecl, metal_mass_fraction, SFR)
-        if compute_IMF_by_Z == False:
+        if compute_IMF_by_Z is False:
             import pickle
             self.IMF_Z_v_list = pickle.load(open('IMF_Z_v_list.pkl', 'rb'))
         else:
-            self.IMF_Z_v_list = sIMF_by_Z.return_list()
+            self.IMF_Z_v_list = self.return_list()
     
     def return_list(self):
         IMF_Z_v_list = []
@@ -194,7 +194,7 @@ class IGIMFGrid(InstanceIGIMF):
             IGIMF_list = []
             for Z in self.Z_massfrac_v:
                 igimf = InstanceIGIMF(Z, S, computeV=True)
-                pickle.dump(igimf,open(f'grid/igimf_SFR{S}_Z{Z}.pkl','wb'))
+                pickle.dump(igimf.__dict__,open(f'grid/igimf_SFR{S}_Z{Z}.pkl','wb'))
         return None
      
 if __name__ == '__main__':
@@ -222,4 +222,4 @@ if __name__ == '__main__':
     print(instance_IGIMF.IGIMF_v)
     
     create_grid = IGIMFGrid()
-    create_grid.by_Z_by_SFR()
+    create_grid.by_Z_by_SFR_pickle()
