@@ -190,14 +190,26 @@ class IGIMFGrid(InstanceIGIMF):
     
     def by_Z_by_SFR_pickle(self):
         import pickle
+        #df = {'SFR':[], 'metal_mass_fraction':[], 'mass_star':[], 'IGIMF':[]}
         for S in self.SFR_v:
             IGIMF_list = []
             for Z in self.Z_massfrac_v:
                 igimf = InstanceIGIMF(Z, S, computeV=True)
-                pickle.dump(igimf.__dict__,open(f'grid/igimf_SFR{S}_Z{Z}.pkl','wb'))
+                #df['SFR'].append(S)
+                #df['metal_mass_fraction'].append(Z)
+                #df['mass_star'].append(self.mstar_v)
+                #df['IGIMF'].append(igimf.IGIMF_func(self.mstar_v))
+                df = {}
+                df['SFR'] = S
+                df['metal_mass_fraction'] = Z
+                df['mass_star'] = self.mstar_v
+                df['IGIMF'] = igimf.IGIMF_v
+                df = pd.DataFrame(df)
+                pickle.dump(df,open(f'grid/igimf_SFR{S}_Z{Z}.pkl','wb'))
         return None
      
 if __name__ == '__main__':
+    '''
     metal_mass_fraction = 1e-1 * 0.0134
     M_igal = 1e10
     M_ecl = 1e5
@@ -220,6 +232,6 @@ if __name__ == '__main__':
     instance_IGIMF = InstanceIGIMF(metal_mass_fraction, o_igimf.SFR,
                                    computeV=True)
     print(instance_IGIMF.IGIMF_v)
-    
+    '''
     create_grid = IGIMFGrid()
     create_grid.by_Z_by_SFR_pickle()
