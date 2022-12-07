@@ -133,3 +133,5 @@ dmypy.json
 
 # dev
 _ags*
+data/
+figs/
