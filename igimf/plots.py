@@ -261,14 +261,62 @@ class Plots:
         fig.tight_layout()
         plt.show(block=False)
         #plt.savefig(f'figs/IMF_plot_3D.pdf', bbox_inches='tight')
+    
+    def IGIMF_3D_plot(self, df, SFR_v, metal_mass_fraction_v, mstar_v, by_v='SFR', col_ax_idx=10, azim_rot=-120, elev_rot=20):
+        '''
+        by_v can be "SFR" or "metal_mass_fraction"
+        '''
+        from mpl_toolkits import mplot3d
+        import matplotlib.pyplot as plt
+        
+        Msun = r'$M_{\odot}$'
+        if by_v == 'SFR':
+            y_ax = SFR_v
+            color_ax = metal_mass_fraction_v
+            title = 'metal mass fraction'
+            units = f'[{Msun}/yr]'
+        elif by_v == 'metal_mass_fraction':
+            y_ax = metal_mass_fraction_v
+            color_ax = SFR_v
+            title = 'SFR'
+            units = ''
+        else:
+            raise ValueError("set by_v either to 'SFR' or 'metal_mass_fraction'. ")
+        
+        fig = plt.figure(figsize=(10,8))
+        ax = plt.axes(projection ='3d')
+        x = np.outer(mstar_v, np.ones(len(y_ax)))
+        y = np.outer(y_ax, np.ones(len(mstar_v))).T
+        xi = np.reshape([df.loc[((df['mass_star']==ival) & (df[by_v]==jval) 
+            & (df['metal_mass_fraction']==metal_mass_fraction_v[col_ax_idx])
+            )]['IGIMF'].to_numpy()[0] for i,ival in enumerate(mstar_v) 
+            for j,jval in enumerate(y_ax)], (len(mstar_v), len(y_ax)))
+        
+        # Setting a mask to exclude zero values
+        xi_mask = np.ma.masked_where(np.isclose(xi, 0.), xi)
+        xi_masked = xi.copy()
+        xi_masked[xi_mask.mask] = np.nan
+        
+        #ax.plot_surface(np.log10(x), np.log10(y), np.ma.log10(xi_masked).data, cmap ='plasma', linewidth=0.25)
+        ax.plot_surface(np.log10(x), np.log10(y), np.ma.log10(xi).data, cmap ='plasma', linewidth=0.25)
+        ax.set_xlabel(r'stellar mass $m_{\star}$ [$\log_{10}(M_{\odot})$]', fontsize=15)
+        ax.set_ylabel(f'{by_v}  {units}', fontsize=15)
+        ax.set_zlabel(r'$\xi_{\rm IGIMF}={\rm d}N_{\star}/ {\rm d} m$'
+                      +f' [#/{Msun}]', fontsize=15)
+        ax.set_title(f'{title} {color_ax[col_ax_idx]:.2e}', fontsize=17)
+        ax.azim = azim_rot
+        ax.elev = elev_rot
+        fig.tight_layout()
+        plt.show(block=False)
+        plt.savefig(f'figs/IGIMF_plot_3D.pdf', bbox_inches='tight')
         
     def sIMF_subplot(self, metallicity_v, Mecl_v, mstar_v, sIMF):
         import matplotlib.pyplot as plt 
         import itertools
         import colorcet as cc
         import matplotlib.ticker as ticker
-        from mpl_toolkits import mplot3d
-        from mpl_toolkits.mplot3d import Axes3D
+        #from mpl_toolkits import mplot3d
+        #from mpl_toolkits.mplot3d import Axes3D
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         #cm = plt.cm.get_cmap(cc.bmy)
         Msun = r'$M_{\odot}$'
@@ -317,8 +365,8 @@ class Plots:
         import itertools
         import colorcet as cc
         import matplotlib.ticker as ticker
-        from mpl_toolkits import mplot3d
-        from mpl_toolkits.mplot3d import Axes3D
+        #from mpl_toolkits import mplot3d
+        #from mpl_toolkits.mplot3d import Axes3D
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         Msun = r'$M_{\odot}$'
         #cm = plt.cm.get_cmap(name='viridis')
