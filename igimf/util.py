@@ -1,6 +1,16 @@
 import numpy as np
 from scipy import optimize
 import scipy.integrate as integr
+
+def find_closest_prod(number):
+    nl = int(np.floor(np.sqrt(number)))
+    if number == nl**2:
+        nu = nl
+    else:
+        nu = nl+1
+    while number > nu*nl:
+        nu += 1
+    return nl, nu
     
 def weighted_func(M, func, *args, **kwargs):
     return np.multiply(M, func(M, *args, **kwargs))
@@ -63,7 +73,7 @@ def normalization_ECMF(IMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, 
     def weighted_IMF(m, x, *args):
         return m * IMF(m, *args) * k(x)
     func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, 
-                                  args=(x, *args))[0] - Mtot)
+                                  args=(x, *args))[0] - Mtot) #, rtol=1e-16
     sol = optimize.root_scalar(func, x0=1e0, x1=1e5, rtol=1e-8)
     m_max = sol.root
     return k(m_max), m_max

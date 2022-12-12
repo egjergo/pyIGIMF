@@ -9,7 +9,7 @@ class Vectors:
     Set up the vectors in order to compute the IGIMF instances
     across a range of (t, SFR(t), Z(t))
     '''
-    def __init__(self, resolution=50):
+    def __init__(self, resolution=20):
         
         # Setup and parameters
         self.plots = plts.Plots()
@@ -22,10 +22,11 @@ class Vectors:
         # Vectors
         self.M_igal_v = np.logspace(6, 11,num=resolution)
         self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
-        self.Z_massfrac_v = np.logspace(-9,-1,num=resolution)
+        self.Z_massfrac_v = np.logspace(-8.5,1,num=resolution)  # np.logspace(-9,-1,num=resolution)
+        self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
                                    np.log10(self.m_star_max), num=resolution)
-        self.SFR_v = np.logspace(-6,4,num=resolution)
+        self.SFR_v = np.logspace(-5.5,4,num=resolution)
         self.metallicity_v = np.log10(self.Z_massfrac_v/self.solar_metallicity)
         
 class SingleECMF(Vectors):
@@ -209,7 +210,6 @@ class IGIMFGrid(InstanceIGIMF):
         return None
      
 if __name__ == '__main__':
-    '''
     metal_mass_fraction = 1e-1 * 0.0134
     M_igal = 1e10
     M_ecl = 1e5
@@ -229,9 +229,9 @@ if __name__ == '__main__':
     sIMF_by_Z.sIMF_subplot()
     sIMF_by_Z.sIMF_subplot_Mecl()
     
-    instance_IGIMF = InstanceIGIMF(metal_mass_fraction, o_igimf.SFR,
-                                   computeV=True)
-    print(instance_IGIMF.IGIMF_v)
-    '''
-    create_grid = IGIMFGrid()
-    create_grid.by_Z_by_SFR_pickle()
+    #instance_IGIMF = InstanceIGIMF(metal_mass_fraction, o_igimf.SFR)#,
+                                   #computeV=True)
+    #print(instance_IGIMF.IGIMF_v)
+    
+    #create_grid = IGIMFGrid()
+    #create_grid.by_Z_by_SFR_pickle()
