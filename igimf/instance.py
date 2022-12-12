@@ -19,8 +19,8 @@ The StellarIMF subclass is structured as follows:
     |-- |-- |-- |-- x_alpha_3
 
 The IGIMF subclass:
-|-- gwIMF_integrand_func, the integrand
-|-- gwIMF (output)
+    |-- gwIMF_integrand_func, the integrand
+    |-- gwIMF (output)
 """
 import numpy as np
 from scipy import optimize

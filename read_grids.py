@@ -25,6 +25,8 @@ mstar_v = np.unique(df['mass_star'])
 df.loc[(df['SFR']==SFR_v[0]) & 
        (df['metal_mass_fraction']==metal_mass_fraction_v[0])]
 
+#get_IGIMF = IGIMF_interpolation({'metal_mass_fraction':0.0134, 'SFR':1})
+#IGIMF = get_IGIMF(mass_star)
 
 #plots.sIMF_subplot(metal_mass_fraction_v, self.Mecl_v, self.mstar_v, self.IMF_Z_v_list)
 ## No IMF for SFR < 5e-5, i.e. Migal ~<6e5
@@ -52,6 +54,6 @@ for s in SFR_v:
     ax3.loglog(grid_sel['mass_star'], grid_sel['IGIMF'])
       
 #plots.IGIMF_3D_plot(df, SFR_v, metal_mass_fraction_v, mstar_v, by_v='SFR', col_ax_idx=40)
-plots.IGIMF_3D_plot(df, SFR_v, metal_mass_fraction_v, mstar_v, by_v='SFR', col_ax_idx=15, azim_rot=-120, elev_rot=20)
+#plots.IGIMF_3D_plot(df, SFR_v, metal_mass_fraction_v, mstar_v, by_v='SFR', col_ax_idx=15, azim_rot=-120, elev_rot=20)
 #plots.IGIMF_3Dlines_plot(df, SFR_v, metal_mass_fraction_v, mstar_v)
         
