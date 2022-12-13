@@ -135,5 +135,5 @@ dmypy.json
 _ags*
 
 # IGIMF
-figs/**/*pdf
-grid/**/*pkl
+figs/
+grid/
