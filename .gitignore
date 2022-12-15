@@ -133,3 +133,7 @@ dmypy.json
 
 # dev
 _ags*
+
+# IGIMF
+figs/
+grid/
