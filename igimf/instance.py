@@ -48,9 +48,9 @@ class Parameters:
         delta_t              [yr] duration of the SF epoch
         '''
     def __init__(self, metal_mass_fraction: float, SFR: float,
-                solar_metallicity=0.0134, delta_alpha=63,
-                m_star_max = 150, m_star_min=0.07, suppress_warnings=True,
-                M_ecl_max = 1e10, M_ecl_min=5, delta_t=1e7):
+                solar_metallicity=0.0134, delta_alpha=63.,
+                m_star_max = 150.1, m_star_min=0.07, suppress_warnings=True,
+                M_ecl_max = 1e10, M_ecl_min=5., delta_t=1e7):
         vars = locals() 
         self.__dict__.update(vars)
         del self.__dict__["self"] 

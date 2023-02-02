@@ -21,11 +21,13 @@ class Vectors:
         
         # Vectors
         self.M_igal_v = np.logspace(6, 11,num=resolution)
-        self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
+        #self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
+        self.Mecl_v = np.array([5.,10.,1.e2,1.e3,1.e5,1.e7,1.e8,1.e9,1.e10])
+        #self.Z_massfrac_v = np.logspace(-7,1, num=9)
         self.Z_massfrac_v = np.logspace(-8.5,1,num=resolution)  # np.logspace(-9,-1,num=resolution)
         self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
-                                   np.log10(self.m_star_max), num=resolution)
+                                   np.log10(self.m_star_max-0.1), num=100)
         self.SFR_v = np.logspace(-5.5,4,num=resolution)
         self.metallicity_v = np.log10(self.Z_massfrac_v/self.solar_metallicity)
         
@@ -228,6 +230,7 @@ if __name__ == '__main__':
     sIMF_by_Z = StellarIMFbyZbyMecl(o_igimf.SFR, compute_IMF_by_Z=True)
     sIMF_by_Z.sIMF_subplot()
     sIMF_by_Z.sIMF_subplot_Mecl()
+    
     
     #instance_IGIMF = InstanceIGIMF(metal_mass_fraction, o_igimf.SFR)#,
                                    #computeV=True)

@@ -347,8 +347,8 @@ class Plots:
         import colorcet as cc
         import matplotlib.ticker as ticker
         from mpl_toolkits.axes_grid1 import make_axes_locatable
-        Msun = r'$M_{\odot}$'
-        cm = cc.cm.CET_D8
+        Msun = r'$M_{\odot}$' 
+        cm = cc.cm.CET_R2
         levels = np.linspace(metallicity_v[0], metallicity_v[-1], 100,
                              endpoint=True)
         CS3 = plt.contourf([[0,0],[0,0]], levels, cmap=cm)
@@ -356,15 +356,15 @@ class Plots:
         num_colors=len(metallicity_v)
         currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
         currentColor = itertools.cycle(currentColors)
-        nrow, ncol = util.find_closest_prod(res)
-        fig, axs = plt.subplots(nrow, ncol, figsize=(8,6))
+        nrow, ncol = 3,3 #util.find_closest_prod(res)
+        fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
         for i, ax in enumerate(axs.flat):
             for j, Z in enumerate(metallicity_v):
                 ax.annotate(r'$M_{\rm ecl}=$%.2e'%(Mecl_v[i]), xy=(0.5, 0.9),
                         xycoords='axes fraction', verticalalignment='top', 
-                        horizontalalignment='center', fontsize=10, alpha=.2)
+                        horizontalalignment='center', fontsize=10, alpha=1)
                 ax.loglog(mstar_v, sIMF[i][j], color=next(currentColor),
-                          alpha=0.1)
+                          alpha=1)
                 ax.set_ylim(5e-3,1e11)
                 ax.set_xlim(2e-2,5e2)
         #for nr in range(3):
@@ -408,9 +408,9 @@ class Plots:
         num_colors=len(Mecl_v)
         currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
         currentColor = itertools.cycle(currentColors)
-        nrow, ncol = util.find_closest_prod(res)
+        nrow, ncol = 3, 3 #util.find_closest_prod(res)
         #fig, axs = plt.subplots(3, 3, figsize=(8,6))
-        fig, axs = plt.subplots(nrow, ncol, figsize=(8,6))
+        fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
         for i, ax in enumerate(axs.flat):
             for j, M in enumerate(Mecl_v):
                 ax.annotate(r'$[Z]=$%.2f'%(metallicity_v[i]), xy=(0.5, 0.9), 
