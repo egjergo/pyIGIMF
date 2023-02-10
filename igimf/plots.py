@@ -445,6 +445,35 @@ class Plots:
         fig.subplots_adjust(wspace=0., hspace=0.)
         fig.savefig('figs/stellarIMF_subplots_Meclcolorbar.pdf')
 
+    def Cook23_plot(self):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        import pandas as pd
+        import numpy as np
+        Cook23 = pd.read_csv('data/Cook23.dat', comment='#', sep='&')
+        Cook23bin = pd.read_csv('data/Cook23bin.dat', comment='#', sep='&')
+        Cook23bin10 = Cook23bin.loc[Cook23bin['SFR-Method']=='1-10Myr']
+        Cook23binHalpha = Cook23bin.loc[Cook23bin['SFR-Method']=='Halpha']
+        Dinnbier22 = pd.read_csv('data/Dinnbier22.dat', comment='#', sep=',')
+        D22low = Dinnbier22.iloc[:3]
+        D22high = Dinnbier22.iloc[3:]
+        fig, ax = plt.subplots(1,1, figsize=(7,5))
+        ax.axhline(y=100, xmin=-4, xmax=1, linewidth=4, color='purple', label='IGIMF at birth')
+        ax.semilogy(D22low['logSFR'], np.power(10, D22low['Gamma'])*100, linestyle='--', color='purple', linewidth=2)
+        ax.semilogy(D22high['logSFR'], np.power(10, D22high['Gamma'])*100, linestyle='--', color='purple', linewidth=2)
+        ax.fill_between(D22high['logSFR'], np.power(10, D22high['Gamma'])*100, np.power(10, D22low['Gamma'])*100, where=(np.power(10, D22low['Gamma'].to_numpy())*100<np.power(10, D22high['Gamma'].to_numpy())*100),  alpha=0.1, color='purple', label=r'DKA22 $<10$ Myr')
+        ax.errorbar(Cook23binHalpha['sfrsig-bin'], Cook23binHalpha['Gamma'], xerr=Cook23binHalpha['sfrsig-u'], yerr=Cook23binHalpha['Gamma-u'], fmt='o', color='red', ecolor='red', elinewidth=3, capsize=0, label=r'C23 H$_{\alpha}$', marker='s', alpha=0.8)
+        ax.errorbar(Cook23bin10['sfrsig-bin'], Cook23bin10['Gamma'], xerr=Cook23bin10['sfrsig-u'], yerr=Cook23bin10['Gamma-u'], fmt='o', color='black', ecolor='black', elinewidth=3, capsize=0,label=r'C23 $<10$ Myr', marker='s', alpha=0.8)
+        ax.errorbar(Cook23['logSFRsig'], Cook23['Gamma'], yerr=Cook23['Gamma-u'], fmt='o', color='blue', ecolor='blue', elinewidth=1, capsize=0,label=r'C23 lit', marker='o', alpha=0.4)
+        ax.set_xlim(-3.7, 0.5)
+        ax.set_ylim(2e-2, 2e2)
+        ax.legend(loc='lower right', fontsize=12, frameon=True)
+        ax.set_ylabel(r'$\Gamma$ (%)', fontsize=15)
+        ax.set_xlabel(r'$\log(\Sigma_{\rm SFR})$ ($M_{\star} yr^{-1} kpc^{-2}$)', fontsize=15)
+        fig.tight_layout()
+        plt.savefig('figs/Cook23.pdf', bbox_inches='tight')
+        plt.show(block=False)
+
     def Fig11_plot(self):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
