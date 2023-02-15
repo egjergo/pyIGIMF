@@ -110,6 +110,7 @@ class SingleStellarIMF(Vectors):
         self.o_IMF = inst.StellarIMF(M_ecl, metal_mass_fraction, SFR)
         self.__dict__.update(self.o_IMF.__dict__)
         self.IMF_v = self.IMF_func(self.mstar_v)
+        self.IMF_weighted_v = self.IMF_weighted_func(self.mstar_v)
         return None
     
     def IMF_plot(self):
@@ -146,21 +147,29 @@ class StellarIMFbyZbyMecl(SingleStellarIMF):
             import pickle
             self.IMF_Z_v_list = pickle.load(open('IMF_Z_v_list.pkl', 'rb'))
         else:
-            self.IMF_Z_v_list = self.return_list()
+            self.IMF_Z_v_list, self.mw_IMF_Z_v_list = self.return_list()
     
     def return_list(self):
         IMF_Z_v_list = []
+        mw_IMF_Z_v_list = []
         for M in self.Mecl_v:
             IMF_v_list = []
+            mw_IMF_v_list = []
             for Z in self.Z_massfrac_v:
                 imf = SingleStellarIMF(M, Z, self.SFR)
                 IMF_v_list.append(imf.IMF_func(self.mstar_v))
+                mw_IMF_v_list.append(imf.IMF_weighted_func(self.mstar_v))
             IMF_Z_v_list.append(IMF_v_list)
-        return IMF_Z_v_list 
+            mw_IMF_Z_v_list.append(mw_IMF_v_list)
+        return IMF_Z_v_list, mw_IMF_Z_v_list
     
     def sIMF_subplot(self):
         return self.plots.sIMF_subplot(self.metallicity_v, self.Mecl_v, 
                                     self.mstar_v, self.IMF_Z_v_list)
+        
+    def mw_sIMF_subplot(self):
+        return self.plots.mw_sIMF_subplot(self.metallicity_v, self.Mecl_v, 
+                                    self.mstar_v, self.mw_IMF_Z_v_list)
     
     def sIMF_subplot_Mecl(self):
         return self.plots.sIMF_subplot_Mecl(self.metallicity_v, self.Mecl_v,
@@ -229,6 +238,7 @@ if __name__ == '__main__':
     
     sIMF_by_Z = StellarIMFbyZbyMecl(o_igimf.SFR, compute_IMF_by_Z=True)
     sIMF_by_Z.sIMF_subplot()
+    sIMF_by_Z.mw_sIMF_subplot()
     sIMF_by_Z.sIMF_subplot_Mecl()
     
     
