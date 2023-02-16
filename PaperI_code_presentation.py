@@ -21,10 +21,16 @@ class Vectors:
         
         # Vectors
         self.M_igal_v = np.logspace(6, 11,num=resolution)
-        #self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
-        self.Mecl_v = np.array([5.,10.,1.e2,1.e3,1.e5,1.e7,1.e8,1.e9,1.e10])
+        self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
+        self.Mecl_v_plot = np.array([5.,10.,1.e2,
+                                     1.e3,1.e5,1.e7,
+                                     1.e8,1.e9,1.e10])
         #self.Z_massfrac_v = np.logspace(-7,1, num=9)
         self.Z_massfrac_v = np.logspace(-8.5,1,num=resolution)  # np.logspace(-9,-1,num=resolution)
+        #self.Z_massfrac_v = np.logspace(-6,1,num=resolution)  # np.logspace(-9,-1,num=resolution)
+        self.Z_massfrac_v_plot = np.array([-7.,-5.,-3.,
+                                           -2.,-1.,0.,
+                                           0.2,0.5,1.]) * self.solar_metallicity
         self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
                                    np.log10(self.m_star_max-0.1), num=100)
@@ -116,6 +122,13 @@ class SingleStellarIMF(Vectors):
     def IMF_plot(self):
         self.plots.IMF_plot(self.mstar_v, self.IMF_v, self.M_ecl, 
                             self.metallicity, self.SFR)
+ 
+
+class SNCC_vs_lowmass:
+    def __init__(self, sIMF_instance: SingleStellarIMF):
+        for item in list(sIMF_instance.__dict__):
+            self.__dict__[item] = sIMF_instance.__dict__[item] 
+ 
    
 class StellarIMFbyMtot(SingleStellarIMF):
     def __init__(self, metal_mass_fraction, SFR, M_ecl=1e5):
@@ -232,6 +245,8 @@ if __name__ == '__main__':
     
     stellar_IMF = SingleStellarIMF(M_ecl, metal_mass_fraction, o_igimf.SFR)
     stellar_IMF.IMF_plot()
+    
+    SNCC_lowmass = SNCC_vs_lowmass(stellar_IMF)
     
     sIMF_by_Mtot = StellarIMFbyMtot(metal_mass_fraction, o_igimf.SFR)
     sIMF_by_Mtot.IMF_plots()

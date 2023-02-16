@@ -180,7 +180,7 @@ class StellarIMF(Parameters):
                                         alpha_3=self.alpha_3, m_max=self.m_max)
         self.IMF_weighted_func = lambda m: util.weighted_func(m, self.IMF_func)
 
-
+        
 class IGIMF(Parameters):
     ''' Computes the Integrated Galaxy-wide Initial Mass Function of stars
     at a given time t, where the galaxy is characterized by 

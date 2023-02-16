@@ -414,7 +414,7 @@ class Plots:
                         xycoords='axes fraction', verticalalignment='top', 
                         horizontalalignment='center', fontsize=10, alpha=1)
                 ax.loglog(mstar_v, np.divide(mw_sIMF[i][j], Mecl_v[i]), color=next(currentColor),
-                          alpha=1)
+                          alpha=0.8)
                 ax.set_ylim(1e-8,1e3)
                 ax.set_xlim(2e-2,5e2)
         #for nr in range(3):
@@ -425,7 +425,7 @@ class Plots:
                 #if nr != 3-1:
                 if nr != 4-1:
                     axs[nr,nc].set_xticklabels([])
-        axs[nrow//2,0].set_ylabel(r'$m \xi_{\star}(m) / M_{\rm ecl}$', fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'$m \xi_{\star}(m) / M_{\rm ecl} \propto \frac{{\rm d} N / {\rm d} \log_{10}m}{M_{\rm ecl}} \quad$ [#/$M_{\odot}$]', fontsize = 14)
         axs[nrow-1, ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]',
                                         fontsize = 15)
         #divider = make_axes_locatable(axs.flat[-1])
