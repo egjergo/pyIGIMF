@@ -20,16 +20,20 @@ class Vectors:
         self.m_star_min = par.m_star_min
         
         # Vectors
-        self.M_igal_v = np.logspace(6, 11,num=resolution)
+        self.M_igal_v = self.logspace_v_func(resolution, minlog=6, maxlog=11)
         #self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
         self.Mecl_v = np.array([5.,10.,1.e2,1.e3,1.e5,1.e7,1.e8,1.e9,1.e10])
         #self.Z_massfrac_v = np.logspace(-7,1, num=9)
-        self.Z_massfrac_v = np.logspace(-8.5,1,num=resolution)  # np.logspace(-9,-1,num=resolution)
+        self.Z_massfrac_v = self.logspace_v_func(resolution, minlog=-8.5, maxlog=1)  # np.logspace(-9,-1,num=resolution)
         self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
                                    np.log10(self.m_star_max-0.1), num=100)
-        self.SFR_v = np.logspace(-5.5,4,num=resolution)
+        self.SFR_v = self.logspace_v_func(resolution, minlog=-5.5, maxlog=4)
         self.metallicity_v = np.log10(self.Z_massfrac_v/self.solar_metallicity)
+        
+    def logspace_v_func(self, res, minlog=-1, maxlog=1):
+        return np.logspace(minlog, maxlog, num=res)
+        
         
 class SingleECMF(Vectors):
     """
@@ -210,12 +214,18 @@ class IGIMFGrid(InstanceIGIMF):
                 df = pd.DataFrame(df)
                 pickle.dump(df,open(f'grid/igimf_SFR{S}_Z{Z}.pkl','wb'))
         return None
-     
+
+class Alpha3_grid:
+    def __init__(self):
+        from sklearn.model_selection import ParameterGrid
+        
+
 if __name__ == '__main__':
     metal_mass_fraction = 1e-1 * 0.0134
     M_igal = 1e10
     M_ecl = 1e5
     o_igimf = SingleECMF(M_igal=M_igal)
+    o_igimf.plots.Cook23_plot()
     o_igimf.ECMF_plot()
     
     ecmf_by_SFR = ECMFbySFR(M_igal=M_igal)

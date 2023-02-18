@@ -445,6 +445,21 @@ class Plots:
         fig.subplots_adjust(wspace=0., hspace=0.)
         fig.savefig('figs/stellarIMF_subplots_Meclcolorbar.pdf')
 
+    def alpha3_plot(self, alpha3_v, x_v, parameter_space):
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        import colorcet as cc
+        fig,ax = plt.subplots(figsize=(6,4))
+        x,y = np.meshgrid(np.log10(parameter_space['rho_cl']), parameter_space['[Z]'])
+        z = np.array(alpha3_v).reshape(resolution,resolution).T
+        cax = ax.contourf(x, y, z, resolution, cmap=cc.cm.CET_L6)
+        plt.xlabel(r'$\log_{10}(\rho_{cl})$ [$\log_{10}(M_{\odot}/{\rm pc}^3)$]', fontsize=15)
+        plt.ylabel(r'[$Z$]', fontsize=15)
+        cbar = fig.colorbar(cax)
+        cbar.set_label(r'$\alpha_3$', fontsize=15)
+        plt.tight_layout()
+        plt.savefig('figs/alpha3plot.pdf')
+
     def Cook23_plot(self):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
@@ -472,7 +487,7 @@ class Plots:
         ax.set_xlabel(r'$\log(\Sigma_{\rm SFR})$ ($M_{\star} yr^{-1} kpc^{-2}$)', fontsize=15)
         fig.tight_layout()
         plt.savefig('figs/Cook23.pdf', bbox_inches='tight')
-        plt.show(block=False)
+        #plt.show(block=False)
 
     def Fig11_plot(self):
         from matplotlib import pyplot as plt

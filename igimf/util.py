@@ -33,40 +33,40 @@ def get_norm(IMF, Mtot, min_val, max_val, *args, **kwargs):
                                                    *args, **kwargs)
     return k, M, np.vectorize(IMF_func), np.vectorize(IMF_weighted_func)
 
-def normalization(IMF, Mtot, lower_lim, upper_lim, *args, **kwargs) -> (float, float):
-    r'''
-    Function that extracts k and m_max (blue boxes in the notes)
-    IMF:    mass distribution function, i.e. either Eq. (1) or (8)
-    Mtot:   value of the integrals in Eq. (2) and (9)
-    k:      normalization of the IMF function, i.e. Eq. (3) and (10)
-    upper_lim and lower_lim:    
-            global upper and lower limits on the integrals
-    guess:  guess on the local upper (lower) limit on the integrals 
-            of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
-    x:      evaluated local upper (lower) limit on the integrals
-            of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
-    *args   other required arguments
-    **kwargs    optional keyword arguments
+# def normalization(IMF, Mtot, lower_lim, upper_lim, *args, **kwargs) -> (float, float):
+#     r'''
+#     Function that extracts k and m_max (blue boxes in the notes)
+#     IMF:    mass distribution function, i.e. either Eq. (1) or (8)
+#     Mtot:   value of the integrals in Eq. (2) and (9)
+#     k:      normalization of the IMF function, i.e. Eq. (3) and (10)
+#     upper_lim and lower_lim:    
+#             global upper and lower limits on the integrals
+#     guess:  guess on the local upper (lower) limit on the integrals 
+#             of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
+#     x:      evaluated local upper (lower) limit on the integrals
+#             of Eq.2 and Eq.9 (of Eq.3 and Eq.10)
+#     *args   other required arguments
+#     **kwargs    optional keyword arguments
         
-    -----
+#     -----
         
-    .. math::
-    `M = \int_{\mathrm{lower_lim}}^{\mathrm{m_max}}
-    m \, \mathrm{IMF}(m,...)\,\mathrm{d}m`
+#     .. math::
+#     `M = \int_{\mathrm{lower_lim}}^{\mathrm{m_max}}
+#     m \, \mathrm{IMF}(m,...)\,\mathrm{d}m`
         
-    .. math::
-    `1 = \int_{\mathrm{m_max}}^{{\rm upper_lim}}{\mathrm{IMF}(m,...)} \,\mathrm{d}m`
-    '''
-    # quad sometimes gives negative k
-    k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, 
-                                            args=(args))[0]) 
-    def weighted_IMF(m, x, *args):
-        return m * IMF(m, *args) * k(x)
-    func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, 
-                                  args=(x, *args))[0] - Mtot)
-    sol = optimize.root_scalar(func, bracket=[lower_lim,upper_lim], rtol=1e-8)
-    m_max = sol.root
-    return k(m_max), m_max
+#     .. math::
+#     `1 = \int_{\mathrm{m_max}}^{{\rm upper_lim}}{\mathrm{IMF}(m,...)} \,\mathrm{d}m`
+#     '''
+#     # quad sometimes gives negative k
+#     k = lambda x: np.reciprocal(integr.quad(IMF, x, upper_lim, 
+#                                             args=(args))[0]) 
+#     def weighted_IMF(m, x, *args):
+#         return m * IMF(m, *args) * k(x)
+#     func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, 
+#                                   args=(x, *args))[0] - Mtot)
+#     sol = optimize.root_scalar(func, bracket=[lower_lim,upper_lim], rtol=1e-8)
+#     m_max = sol.root
+#     return k(m_max), m_max
 
 def normalization_ECMF(IMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
     k = lambda x: np.divide(1-beta, upper_lim**(1-beta) - x**(1-beta))
