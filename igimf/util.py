@@ -11,9 +11,15 @@ def find_closest_prod(number):
     while number > nu*nl:
         nu += 1
     return nl, nu
-    
+       
 def weighted_func(M, func, *args, **kwargs):
     return np.multiply(M, func(M, *args, **kwargs))
+
+def integral_powerlaw(ll, ul, power):
+    if ll < ul:
+        return np.divide(ul**(1-power) - ll**(1-power), 1-power)
+    else:
+        return 0
 
 def normalized(x, func, condition=None, *args, **kwargs):
     '''Checks whether or not the mass function has been normalized'''
@@ -25,8 +31,8 @@ def normalized(x, func, condition=None, *args, **kwargs):
     else:
         return func
         
-def get_norm(IMF, Mtot, min_val, max_val, *args, **kwargs):
-    '''duplicate of stellar_IMF !!!!!!! '''
+def get_norm(normalization, IMF, Mtot:float, min_val:float, max_val:float, *args, **kwargs):
+    '''get normalization, where normalization and IMF are both functions '''
     k, M = normalization(IMF, Mtot, min_val, min_val, *args, **kwargs)
     IMF_func = lambda mass: k * IMF(mass, m_max=M, *args, **kwargs)
     IMF_weighted_func = lambda mass: weighted_func(mass, IMF_func,
@@ -69,65 +75,51 @@ def get_norm(IMF, Mtot, min_val, max_val, *args, **kwargs):
 #     return k(m_max), m_max
 
 def normalization_ECMF(IMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
-    k = lambda x: np.divide(1-beta, upper_lim**(1-beta) - x**(1-beta))
+    k_ECMF = lambda x: np.divide(1-beta, upper_lim**(1-beta) - x**(1-beta))
     def weighted_IMF(m, x, *args):
-        return m * IMF(m, *args) * k(x)
+        return m * IMF(m, *args) * k_ECMF(x)
     func = lambda x: (integr.quad(weighted_IMF, lower_lim, x, 
                                   args=(x, *args))[0] - Mtot) #, rtol=1e-16
     sol = optimize.root_scalar(func, x0=1e0, x1=1e5, rtol=1e-8)
-    m_max = sol.root
-    return k(m_max), m_max
+    Mecl_max = sol.root
+    return k_ECMF(Mecl_max), Mecl_max
 
+# def normalization_ECMF(IMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
+#     k_ECMF = lambda x: np.divide(1-beta, upper_lim**(1-beta) - x**(1-beta))
+#     # def weighted_IMF(m, x, *args):
+#     #     '''m is the stellar mass, x is the lower limit of the mass function'''
+#     #     return m * IMF(m, *args) * k(x)
+#     func = lambda x: k_ECMF(x) * integral_powerlaw(x, upper_lim, beta-1) # beta-1 because it's a weighted function
+#     sol = optimize.root_scalar(func, x0=1e0, x1=1e5, rtol=1e-8)
+#     Mecl_max = sol.root
+#     return k_ECMF(Mecl_max), Mecl_max
+        
 def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (float, float):
-    def integral_IMF(ll, ul, power):
-        if ll < ul:
-            return np.divide(ul**(1-power) - ll**(1-power), 1-power)
-        else:
-            return 0.
-    def k_return(x, first=1, second=1, third=1):
-        return (np.reciprocal(2 * integral_IMF(x, 0.5, alpha1) * first
-                                + (integral_IMF(np.max(0.5,x), 1., alpha2) 
-                                  * second)
-                                + (integral_IMF(np.max(1.,x), upper_lim, 
-                                                alpha3) * third)))
-    #def k(x):
-    #    return np.piecewise(x,
-    #                        [np.logical_and(x>=lower_lim, x<0.5),
-    #                         np.logical_and(x>=0.5, x<1.),
-    #                         np.logical_and(x>=1., x<=upper_lim),
-    #                         np.logical_or(x<lower_lim, x>upper_lim)
-    #                        ],
-    #                        [k_return(x, first=1, second=1, third=1),
-    #                         k_return(x, first=0, second=1, third=1),
-    #                         k_return(x, first=0, second=0, third=1),
-    #                         0.])
     def k(x):
         if np.logical_and(x >= lower_lim, x < 0.5):
-            return (np.reciprocal(2 * integral_IMF(x, 0.5, alpha1) 
-                                + integral_IMF(0.5, 1., alpha2) 
-                                + integral_IMF(1., upper_lim, alpha3)))
+            return (np.reciprocal(2 * integral_powerlaw(x, 0.5, alpha1) 
+                                + integral_powerlaw(0.5, 1., alpha2) 
+                                + integral_powerlaw(1., upper_lim, alpha3)))
         if np.logical_and(x >= 0.5, x < 1.):
-            return (np.reciprocal(integral_IMF(x, 1., alpha2) 
-                                + integral_IMF(1., upper_lim, alpha3)))
+            return (np.reciprocal(integral_powerlaw(x, 1., alpha2) 
+                                + integral_powerlaw(1., upper_lim, alpha3)))
         if np.logical_and(x >= 1., x <= upper_lim):
-            return (np.reciprocal(integral_IMF(x, upper_lim, alpha3)))
+            return (np.reciprocal(integral_powerlaw(x, upper_lim, alpha3)))
         else:
             return 0.
     def weighted_IMF(x):
         if np.logical_and(x >= lower_lim, x < 0.5):
-            return (2 * integral_IMF(0.08, x, alpha1-1))
+            return (2 * integral_powerlaw(0.08, x, alpha1-1))
         if np.logical_and(x >= 0.5, x < 1.):
-            return (2 * integral_IMF(0.08, 0.5, alpha1-1)
-                    + integral_IMF(0.5, x, alpha2-1))
+            return (2 * integral_powerlaw(0.08, 0.5, alpha1-1)
+                    + integral_powerlaw(0.5, x, alpha2-1))
         if np.logical_and(x >= 1., x <= upper_lim):
-            return (2 * integral_IMF(0.08, 0.5, alpha1-1)
-                    + integral_IMF(0.5, 1., alpha2-1)
-                    + integral_IMF(1., x, alpha3-1))
+            return (2 * integral_powerlaw(0.08, 0.5, alpha1-1)
+                    + integral_powerlaw(0.5, 1., alpha2-1)
+                    + integral_powerlaw(1., x, alpha3-1))
         else:
             return 0.
-    #def integral_weighted_IMF(m, x, alpha3, ll, ul, power):
     func = lambda x: (k(x) * weighted_IMF(x) - Mtot)
-    #sol = optimize.root_scalar(func, x0=1, x1=20, rtol=1e-8)
     try:
         sol = optimize.root_scalar(func, method='bisect', rtol=1e-15,
                                    bracket=(lower_lim, upper_lim))

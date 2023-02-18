@@ -390,6 +390,54 @@ class Plots:
         fig.savefig('figs/stellarIMF_subplots_Zcolorbar.pdf')
 
 
+
+    def mw_sIMF_subplot(self, metallicity_v, Mecl_v, mstar_v, mw_sIMF, res=20):
+        import matplotlib.pyplot as plt 
+        import itertools
+        import colorcet as cc
+        import matplotlib.ticker as ticker
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+        Msun = r'$M_{\odot}$' 
+        cm = cc.cm.CET_R3
+        levels = np.linspace(metallicity_v[0], metallicity_v[-1], 100,
+                             endpoint=True)
+        CS3 = plt.contourf([[0,0],[0,0]], levels, cmap=cm)
+        plt.clf()
+        num_colors=len(metallicity_v)
+        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
+        currentColor = itertools.cycle(currentColors)
+        nrow, ncol = 3,3 #util.find_closest_prod(res)
+        fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
+        for i, ax in enumerate(axs.flat):
+            for j, Z in enumerate(metallicity_v):
+                ax.annotate(r'$M_{\rm ecl}=$%.2e'%(Mecl_v[i]), xy=(0.5, 0.9),
+                        xycoords='axes fraction', verticalalignment='top', 
+                        horizontalalignment='center', fontsize=10, alpha=1)
+                ax.loglog(mstar_v, np.divide(mw_sIMF[i][j], Mecl_v[i]), color=next(currentColor),
+                          alpha=0.8)
+                ax.set_ylim(1e-8,1e3)
+                ax.set_xlim(2e-2,5e2)
+        #for nr in range(3):
+        for nr in range(nrow):
+            for nc in range(ncol):
+                if nc != 0:
+                    axs[nr,nc].set_yticklabels([])
+                #if nr != 3-1:
+                if nr != 4-1:
+                    axs[nr,nc].set_xticklabels([])
+        axs[nrow//2,0].set_ylabel(r'$m \xi_{\star}(m) / M_{\rm ecl} \propto \frac{{\rm d} N / {\rm d} \log_{10}m}{M_{\rm ecl}} \quad$ [#/$M_{\odot}$]', fontsize = 14)
+        axs[nrow-1, ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]',
+                                        fontsize = 15)
+        #divider = make_axes_locatable(axs.flat[-1])
+        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
+        cax = plt.axes([0.85, 0.2, 0.025, 0.7])
+        cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
+                            ticks=ticker.MultipleLocator(1)).set_label(
+                                label=r'[Z]',size=15)
+        fig.tight_layout(rect=[0,0,0.85,1])
+        fig.subplots_adjust(wspace=0., hspace=0.)
+        fig.savefig('figs/massweighted_stellarIMF_subplots_Zcolorbar.pdf')
+
     def sIMF_subplot_Mecl(self, metallicity_v, Mecl_v, mstar_v, sIMF, res=20):
         import matplotlib.pyplot as plt 
         import itertools
