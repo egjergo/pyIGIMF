@@ -21,7 +21,7 @@ class Vectors:
         
         # Vectors
         self.M_igal_v = self.logspace_v_func(resolution, minlog=6, maxlog=11)
-        #self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
+        self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
         self.Mecl_v_plot = np.array([5.,10.,1.e2,
                                      1.e3,1.e5,1.e7,
                                      1.e8,1.e9,1.e10])

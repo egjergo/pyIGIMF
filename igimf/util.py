@@ -84,15 +84,18 @@ def normalization_ECMF(IMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, 
     Mecl_max = sol.root
     return k_ECMF(Mecl_max), Mecl_max
 
-# def normalization_ECMF(IMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
-#     k_ECMF = lambda x: np.divide(1-beta, upper_lim**(1-beta) - x**(1-beta))
-#     # def weighted_IMF(m, x, *args):
-#     #     '''m is the stellar mass, x is the lower limit of the mass function'''
-#     #     return m * IMF(m, *args) * k(x)
-#     func = lambda x: k_ECMF(x) * integral_powerlaw(x, upper_lim, beta-1) # beta-1 because it's a weighted function
-#     sol = optimize.root_scalar(func, x0=1e0, x1=1e5, rtol=1e-8)
-#     Mecl_max = sol.root
-#     return k_ECMF(Mecl_max), Mecl_max
+# def normalization_ECMF(beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
+#     k_ECMF = lambda x: np.reciprocal(integral_powerlaw(x, 0.5, beta))
+#     def weighted_ECMF(x):
+#         return integral_powerlaw(lower_lim, x, beta-1)
+#     func = lambda x: (k_ECMF(x) * weighted_ECMF(x) - Mtot)
+#     try:
+#         sol = optimize.root_scalar(func, method='bisect', rtol=1e-15,
+#                                    bracket=(lower_lim, upper_lim))
+#         M_ecl_max = sol.root
+#     except:
+#         M_ecl_max = upper_lim
+#     return k_ECMF(M_ecl_max), M_ecl_max
         
 def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (float, float):
     def k(x):
