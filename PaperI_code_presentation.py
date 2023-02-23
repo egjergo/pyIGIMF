@@ -9,7 +9,7 @@ class Vectors:
     Set up the vectors in order to compute the IGIMF instances
     across a range of (t, SFR(t), Z(t))
     '''
-    def __init__(self, resolution=20):
+    def __init__(self, resolution=30):
         
         # Setup and parameters
         self.plots = plts.Plots()
@@ -21,19 +21,19 @@ class Vectors:
         
         # Vectors
         self.M_igal_v = self.logspace_v_func(resolution, minlog=6, maxlog=11)
-        self.Mecl_v = np.logspace(np.log10(5),10,num=resolution)
+        self.Mecl_v = self.logspace_v_func(9, minlog=np.log10(5), maxlog=10)#np.logspace(np.log10(5),10,num=9)
         self.Mecl_v_plot = np.array([5.,10.,1.e2,
                                      1.e3,1.e5,1.e7,
                                      1.e8,1.e9,1.e10])
         #self.Z_massfrac_v = np.logspace(-7,1, num=9)
-        self.Z_massfrac_v = self.logspace_v_func(resolution, minlog=-8.5, maxlog=1)  # np.logspace(-9,-1,num=resolution)
+        self.Z_massfrac_v = self.logspace_v_func(resolution, minlog=-7, maxlog=1) # np.logspace(-9,-1,num=resolution)
         self.Z_massfrac_v_plot = np.array([-7.,-5.,-3.,
                                            -2.,-1.,0.,
                                            0.2,0.5,1.]) * self.solar_metallicity
         self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
                                    np.log10(self.m_star_max-0.1), num=100)
-        self.SFR_v = self.logspace_v_func(resolution, minlog=-5.5, maxlog=4)
+        self.SFR_v = self.logspace_v_func(1000, minlog=-5.5, maxlog=4)
         self.metallicity_v = np.log10(self.Z_massfrac_v/self.solar_metallicity)
         
     def logspace_v_func(self, res, minlog=-1, maxlog=1):
@@ -156,14 +156,9 @@ class StellarIMFbyMtot(SingleStellarIMF):
         
         
 class StellarIMFbyZbyMecl(SingleStellarIMF):
-    def __init__(self, SFR, M_ecl=1e5, metal_mass_fraction=0.1*0.0134,
-                 compute_IMF_by_Z=False):
+    def __init__(self, SFR, M_ecl=1e5, metal_mass_fraction=0.1*0.0134):
         super().__init__(M_ecl, metal_mass_fraction, SFR)
-        if compute_IMF_by_Z is False:
-            import pickle
-            self.IMF_Z_v_list = pickle.load(open('IMF_Z_v_list.pkl', 'rb'))
-        else:
-            self.IMF_Z_v_list, self.mw_IMF_Z_v_list = self.return_list()
+        self.IMF_Z_v_list, self.mw_IMF_Z_v_list = self.return_list()
     
     def return_list(self):
         IMF_Z_v_list = []
@@ -239,6 +234,7 @@ class IGIMFGrid(InstanceIGIMF):
 class Alpha3_grid:
     def __init__(self):
         from sklearn.model_selection import ParameterGrid
+
         
 
 if __name__ == '__main__':
@@ -260,7 +256,7 @@ if __name__ == '__main__':
     sIMF_by_Mtot = StellarIMFbyMtot(metal_mass_fraction, o_igimf.SFR)
     sIMF_by_Mtot.IMF_plots()
     
-    sIMF_by_Z = StellarIMFbyZbyMecl(o_igimf.SFR, compute_IMF_by_Z=True)
+    sIMF_by_Z = StellarIMFbyZbyMecl(o_igimf.SFR)
     sIMF_by_Z.sIMF_subplot()
     sIMF_by_Z.mw_sIMF_subplot()
     sIMF_by_Z.sIMF_subplot_Mecl()
