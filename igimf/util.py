@@ -80,6 +80,8 @@ def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (fl
         sol = optimize.root_scalar(func, method='bisect', rtol=1e-15,
                                    bracket=(lower_lim, upper_lim))
         m_max = sol.root
+        if m_max > upper_lim:
+            m_max = upper_lim
     except:
         m_max = upper_lim
     #print(f'{Mtot = },\t {m_max = },\t {k(m_max)=}')
