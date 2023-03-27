@@ -78,7 +78,7 @@ def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (fl
     func = lambda x: (k(x) * weighted_IMF(x) - Mtot)
     try:
         sol = optimize.root_scalar(func, method='bisect', rtol=1e-15,
-                                   bracket=(lower_lim, upper_lim))
+                                   bracket=(lower_lim+.01, upper_lim-.01))
         m_max = sol.root
         if m_max > upper_lim:
             m_max = upper_lim
