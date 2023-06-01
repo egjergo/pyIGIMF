@@ -9,7 +9,7 @@ class Vectors:
     Set up the vectors in order to compute the IGIMF instances
     across a range of (t, SFR(t), Z(t))
     '''
-    def __init__(self, resolution=5):
+    def __init__(self, resolution=50):
         
         # Setup and parameters
         self.plots = plts.Plots()
