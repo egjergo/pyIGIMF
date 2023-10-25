@@ -9,7 +9,7 @@ class Vectors:
     Set up the vectors in order to compute the IGIMF instances
     across a range of (t, SFR(t), Z(t))
     '''
-    def __init__(self, resolution=50):
+    def __init__(self, resolution=30):
         
         # Setup and parameters
         self.plots = plts.Plots()
@@ -21,23 +21,16 @@ class Vectors:
         
         # Vectors
         self.M_igal_v = self.logspace_v_func(resolution, minlog=6, maxlog=11)
-        #self.Mecl_v = self.logspace_v_func(9, minlog=np.log10(5), maxlog=10)#np.logspace(np.log10(5),10,num=9)
-        self.Mecl_v = self.logspace_v_func(5, minlog=np.log10(5), maxlog=10)#np.logspace(np.log10(5),10,num=9)
-        #self.Mecl_v_plot = np.array([5.,10.,1.e2,
-        #                             1.e3,1.e5,1.e7,
-        #                             1.e8,1.e9,1.e10])
-        self.Mecl_v_plot = np.array([1.e3,1.e5,1.e7])
-        #self.Z_massfrac_v = np.logspace(-7,1, num=9)
-        self.Z_massfrac_v = self.logspace_v_func(resolution, minlog=-7, maxlog=1) # np.logspace(-9,-1,num=resolution)
-        #self.Z_massfrac_v_plot = np.array([-7.,-5.,-3.,
-        #                                   -2.,-1.,0.,
-        #                                   0.2,0.5,1.]) * self.solar_metallicity
-        self.Z_massfrac_v_plot = np.array([10**-2.,10**-1.,10**0.]) * self.solar_metallicity
+        self.Mecl_v = self.logspace_v_func(resolution, minlog=np.log10(5), maxlog=10)
+        #self.Mecl_v = np.array([5.00000000e+00, 1.e+03, 1.e+06, 1.00000000e+10])
+        self.Z_massfrac_v = self.logspace_v_func(resolution, minlog=-7, maxlog=0.5) #self.logspace_v_func(4, minlog=-7, maxlog=1) 
         self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
                                    np.log10(self.m_star_max-0.1), num=100)
-        self.SFR_v = self.logspace_v_func(1000, minlog=-5.5, maxlog=4)
-        self.metallicity_v = np.log10(self.Z_massfrac_v_plot/self.solar_metallicity)
+        self.SFR_v = self.logspace_v_func(resolution, minlog=-5.5, maxlog=4)
+        self.metallicity_v = np.log10(self.Z_massfrac_v/self.solar_metallicity)
+        self.metallicity_v = np.array([-4, -1., 0.,  .5])
+        self.Z_massfrac_v = np.power(10., self.metallicity_v) * self.solar_metallicity
         
     def logspace_v_func(self, res, minlog=-1, maxlog=1):
         return np.logspace(minlog, maxlog, num=res)
@@ -178,17 +171,20 @@ class StellarIMFbyZbyMecl(SingleStellarIMF):
         return IMF_Z_v_list, mw_IMF_Z_v_list
     
     def sIMF_subplot(self):
-        return self.plots.sIMF_subplot(self.metallicity_v, self.Mecl_v_plot, 
+        return self.plots.sIMF_subplot(self.metallicity_v, self.Mecl_v, 
                                     self.mstar_v, self.IMF_Z_v_list)
         
     def mw_sIMF_subplot(self):
-        return self.plots.mw_sIMF_subplot_proposal(self.metallicity_v, self.Mecl_v_plot, 
+        return self.plots.mw_sIMF_subplot(self.metallicity_v, self.Mecl_v, 
                                     self.mstar_v, self.mw_IMF_Z_v_list)
     
     def sIMF_subplot_Mecl(self):
-        return self.plots.sIMF_subplot_Mecl(self.metallicity_v, self.Mecl_v_plot,
+        return self.plots.sIMF_subplot_Mecl(self.metallicity_v, self.Mecl_v,
                                             self.mstar_v, self.IMF_Z_v_list)
 
+    def sIMF_subplot_SFR(self):
+        return self.plots.sIMF_subplot_SFR(self.metallicity_v, self.SFR_v,
+                                            self.mstar_v, self.IMF_Z_v_list)
 
 class InstanceIGIMF(Vectors):
     def __init__(self, metal_mass_fraction:float, SFR:float, computeV=False):
@@ -197,6 +193,7 @@ class InstanceIGIMF(Vectors):
         self.__dict__.update(self.o_IGIMF.__dict__)
         if computeV is True:
             self.IGIMF_v = self.o_IGIMF.IGIMF_func(self.mstar_v)
+
 
 class IGIMFGrid(InstanceIGIMF):   
     '''Creates IGIMF grids'''  
@@ -263,11 +260,11 @@ if __name__ == '__main__':
     sIMF_by_Z.sIMF_subplot()
     sIMF_by_Z.mw_sIMF_subplot()
     sIMF_by_Z.sIMF_subplot_Mecl()
+    sIMF_by_Z.sIMF_subplot_SFR()
     
     
-    
-    #instance_IGIMF = InstanceIGIMF(metal_mass_fraction, o_igimf.SFR)#,
-                                   #computeV=True)
+    #instance_IGIMF = InstanceIGIMF(metal_mass_fraction, o_igimf.SFR,
+    #                               computeV=True)
     #print(instance_IGIMF.IGIMF_v)
     
     #create_grid = IGIMFGrid()
