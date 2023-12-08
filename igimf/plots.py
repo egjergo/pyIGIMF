@@ -69,8 +69,8 @@ class Plots:
         ax.set_ylabel(r'$M_{\rm ecl,max}$ [%s]'%(Msun), fontsize=15)
         ax.set_xlabel(r'SFR [%s/yr]'%(Msun), fontsize=15)
         #ax.set_title(r'[Z] = %.2f' %(Z), fontsize=15)
-        #ax.set_ylim(5e-2,1e8)
-        #ax.set_xlim(1e-4,1e3)
+        ax.set_ylim(10**(-1.5),1e8)
+        ax.set_xlim(1e-6,1e2)
         plt.yticks(fontsize=15)
         plt.xticks(fontsize=15)
         ax.tick_params(width=2)
@@ -120,9 +120,10 @@ class Plots:
     def ECMF_plots(self, M_ecl_v, ECMF_v_list, SFR_v):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
+        import colorcet as cc
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         Msun = r'$M_{\odot}$'
-        cm = plt.cm.get_cmap(name='inferno')
+        cm = cc.cm.CET_I3 #plt.cm.get_cmap(name='inferno')
         num_colors = len(ECMF_v_list)
         Z = [[0,0],[0,0]]
         #levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), num_colors, endpoint=True)
@@ -152,9 +153,10 @@ class Plots:
     def gwIMF_plots(self, star_v, gwIMF_bySFR_eval, SFR_v, metal_mass_fraction):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
+        import colorcet as cc
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         Msun = r'$M_{\odot}$'
-        cm = plt.cm.get_cmap(name='magma')
+        cm = cc.cm.CET_R2 #plt.cm.get_cmap(name='magma')
         num_colors = len(gwIMF_bySFR_eval)
         Z = [[0,0],[0,0]]
         #levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), num_colors, endpoint=True)
@@ -171,7 +173,7 @@ class Plots:
         cax = divider.append_axes("right", size="5%", pad="2%")
         metallicity = np.log10(metal_mass_fraction/self.solar_metallicity)
         ax.set_title(f'[Z] = {metallicity:.2f}', fontsize=15)
-        ax.set_ylabel(r'$\xi_{gwIMF}$'+f' [#/{Msun}]', fontsize=15)
+        ax.set_ylabel(r'$\xi_{IGIMF}$'+f' [#/{Msun}]', fontsize=15)
         ax.set_xlabel(r'stellar mass [%s]' %(Msun), fontsize=15)
         #ax.set_ylim(1e-1,1e5)
         ax.tick_params(width=2)
@@ -267,18 +269,19 @@ class Plots:
         #plt.savefig(f'figs/IMF_plot_3D.pdf', bbox_inches='tight')
     
     def IGIMF_3D_plot(self, df, SFR_v, metal_mass_fraction_v, mstar_v, 
-                      by_v='SFR', col_ax_idx=10, azim_rot=-120, elev_rot=20):
+                      by_v='SFR', col_ax_idx=10, azim_rot=-150, elev_rot=10):
         '''
         by_v can be "SFR" or "metal_mass_fraction"
         '''
         from mpl_toolkits import mplot3d
         import matplotlib.pyplot as plt
+        import colorcet as cc
         
         Msun = r'$M_{\odot}$'
         if by_v == 'SFR':
             y_ax = SFR_v
             color_ax = metal_mass_fraction_v
-            title = '[Z]'
+            title = '[Z] = '
             metallicity_val = np.log10(color_ax[col_ax_idx]/0.0134)
             units = f'[{Msun}/yr]'
         elif by_v == 'metal_mass_fraction':
@@ -291,6 +294,7 @@ class Plots:
         
         fig = plt.figure(figsize=(10,8))
         ax = plt.axes(projection ='3d')
+        
         x = np.outer(mstar_v, np.ones(len(y_ax)))
         y = np.outer(y_ax, np.ones(len(mstar_v))).T
         xi = np.reshape([df.loc[((df['mass_star']==ival) & (df[by_v]==jval) 
@@ -298,18 +302,10 @@ class Plots:
             )]['IGIMF'].to_numpy()[0] for i,ival in enumerate(mstar_v) 
             for j,jval in enumerate(y_ax)], (len(mstar_v), len(y_ax)))
         
-        ## Setting a mask to exclude zero values
-        #xi_mask = np.ma.masked_where(np.isnan(xi), xi)
-        #xi_masked = xi.copy()
-        #xi_masked[np.isnan(xi)] = -0.
-        
-        #ax.plot_surface(np.log10(x), np.log10(y), np.log10(xi_masked), cmap ='plasma', linewidth=0.25)
-        ax.plot_surface(np.log10(x[:47,:47]), np.log10(y[:47,:47]), np.ma.log10(xi[:47,:47]), cmap ='plasma', linewidth=0.25)
-        #ax.plot_surface(np.log10(x), np.log10(y), np.log10(xi_masked), cmap ='plasma', linewidth=0.25)
+        ax.plot_surface(np.log10(x), np.log10(y), np.ma.log10(xi), cmap =cc.cm.CET_L8, linewidth=0.25)
         ax.set_xlabel(r'stellar mass $m_{\star}$ [$\log_{10}(M_{\odot})$]', fontsize=15)
         ax.set_ylabel(f'{by_v}  {units}', fontsize=15)
-        ax.set_zlabel(r'$\xi_{\rm IGIMF}={\rm d}N_{\star}/ {\rm d} m$'+
-                      f'['+r'$\log_{10}({\rm #}/M_{\odot})$'+f']', fontsize=15)
+        ax.set_zlabel(r'$\xi_{\rm IGIMF}={\rm d}N_{\star}/ {\rm d} m$'+f' ['+r'$\log_{10}$'+r'(#/$M_{\odot}$)'+f']', fontsize=15)
         ax.set_title(f'{title} {metallicity_val:.2f}', fontsize=17)
         ax.azim = azim_rot
         ax.elev = elev_rot
@@ -317,156 +313,42 @@ class Plots:
         plt.show(block=False)
         plt.savefig(f'figs/IGIMF_plot_3D.pdf', bbox_inches='tight')
      
-    def IGIMF_3Dlines_plot(self, df, SFR_v, metal_mass_fraction_v, mstar_v):
-        #from mpl_toolkits import mplot3d
+    def IGIMF_plots(self, df, SFR_v, metal_mass_fraction_v, mstar_v):
         import matplotlib.pyplot as plt
         import matplotlib as mpl
         from mpl_toolkits.mplot3d import Axes3D
+        import matplotlib.ticker as ticker
         import colorcet as cc
         import itertools
         mpl.rcParams['legend.fontsize'] = 10
         M = r'$M_{\odot}$'
-        cm = cc.cm.CET_L8
-        num_colors=len(metal_mass_fraction_v)
-        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
-        currentColor = itertools.cycle(currentColors)
-        fig = plt.figure(figsize=(10,8))
-        ax = fig.add_subplot(projection ='3d')       
-        for m in metal_mass_fraction_v: 
-            for s in SFR_v:
-                grid_sel = df.loc[(df['SFR']==s) & (df['metal_mass_fraction']==m)]
-                ax.loglog(grid_sel['mass_star'], grid_sel['SFR'], grid_sel['IGIMF'], color=next(currentColor))
-        fig.tight_layout()
-        plt.show(block=False)
-        plt.savefig(f'figs/IGIMF_plot_3Dlines.pdf', bbox_inches='tight')
-        return None
-       
-    def sIMF_subplot_old(self, metallicity_v, Mecl_v, mstar_v, sIMF, res=20):
-        import matplotlib.pyplot as plt 
-        import itertools
-        import colorcet as cc
-        import matplotlib.ticker as ticker
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        Msun = r'$M_{\odot}$' 
-        cm = cc.cm.CET_R2
+        cm = cc.cm.CET_D8
+        metallicity_v = np.log10(metal_mass_fraction_v/0.0134)
         levels = np.linspace(metallicity_v[0], metallicity_v[-1], 100,
                              endpoint=True)
+        nrow, ncol = 2,2 #3,3 #util.find_closest_prod(res)
+        fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
         CS3 = plt.contourf([[0,0],[0,0]], levels, cmap=cm)
         plt.clf()
+        
+        SFR_sel = SFR_v[[1, -10, -6, -2]]
+        metal_sel = np.log10(metal_mass_fraction_v[[4,-6, -4, -1]]/0.0134)
+        
         num_colors=len(metallicity_v)
-        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
+        currentColors = reversed(list([cm(1.*i/num_colors) for i in range(num_colors)]))
         currentColor = itertools.cycle(currentColors)
-        nrow, ncol = 3,3 #util.find_closest_prod(res)
         fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
         for i, ax in enumerate(axs.flat):
-            for j, Z in enumerate(metallicity_v):
-                ax.annotate(r'$M_{\rm ecl}=$%.2e'%(Mecl_v[i]), xy=(0.5, 0.9),
+            for j, Z in reversed(list(enumerate(metallicity_v))):
+                grid_sel = df.loc[((df['SFR']==SFR_sel[i]) & (df['metal_mass_fraction']==metal_mass_fraction_v[j]))]
+                ax.annotate(r'SFR = %.2e'%(SFR_sel[i]), xy=(0.5, 0.9),
                         xycoords='axes fraction', verticalalignment='top', 
                         horizontalalignment='center', fontsize=10, alpha=1)
-                ax.loglog(mstar_v, sIMF[i][j], color=next(currentColor),
-                          alpha=1)
+                ax.loglog(grid_sel['mass_star'], grid_sel['IGIMF'], color=next(currentColor), alpha=1)
+                for shift in np.arange(-5,20):
+                    ax.loglog(mstar_v, util.Kroupa01(mstar_v)*np.power(10.,shift), color='grey', linewidth=0.2, linestyle='--', alpha=0.1)
                 ax.set_ylim(5e-3,1e11)
-                ax.set_xlim(2e-2,5e2)
-        #for nr in range(3):
-        for nr in range(nrow):
-            for nc in range(ncol):
-                if nc != 0:
-                    axs[nr,nc].set_yticklabels([])
-                #if nr != 3-1:
-                if nr != 4-1:
-                    axs[nr,nc].set_xticklabels([])
-        axs[nrow//2,0].set_ylabel(r'$\xi_{\star}={\rm d} N_{\star}/{\rm d} m$'+
-                                  f' [#/{Msun}]', fontsize = 15)
-        axs[nrow-1, ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]',
-                                        fontsize = 15)
-        #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
-        cax = plt.axes([0.85, 0.2, 0.025, 0.7])
-        cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
-                            ticks=ticker.MultipleLocator(1)).set_label(
-                                label=r'[Z]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
-        fig.subplots_adjust(wspace=0., hspace=0.)
-        fig.savefig('figs/stellarIMF_subplots_Zcolorbar.pdf')
-
-
-
-    def mw_sIMF_subplot_old(self, metallicity_v, Mecl_v, mstar_v, mw_sIMF, res=20):
-        import matplotlib.pyplot as plt 
-        import itertools
-        import colorcet as cc
-        import matplotlib.ticker as ticker
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        Msun = r'$M_{\odot}$' 
-        cm = cc.cm.CET_R3
-        levels = np.linspace(metallicity_v[0], metallicity_v[-1], 100,
-                             endpoint=True)
-        CS3 = plt.contourf([[0,0],[0,0]], levels, cmap=cm)
-        plt.clf()
-        num_colors=len(metallicity_v)
-        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
-        currentColor = itertools.cycle(currentColors)
-        nrow, ncol = 3,3 #util.find_closest_prod(res)
-        fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
-        for i, ax in enumerate(axs.flat):
-            for j, Z in enumerate(metallicity_v):
-                ax.annotate(r'$M_{\rm ecl}=$%.2e'%(Mecl_v[i]), xy=(0.5, 0.9),
-                        xycoords='axes fraction', verticalalignment='top', 
-                        horizontalalignment='center', fontsize=10, alpha=1)
-                ax.loglog(mstar_v, np.divide(mw_sIMF[i][j], Mecl_v[i]), color=next(currentColor),
-                          alpha=0.8)
-                ax.set_ylim(1e-8,1e3)
-                ax.set_xlim(2e-2,5e2)
-        #for nr in range(3):
-        for nr in range(nrow):
-            for nc in range(ncol):
-                if nc != 0:
-                    axs[nr,nc].set_yticklabels([])
-                #if nr != 3-1:
-                if nr != 4-1:
-                    axs[nr,nc].set_xticklabels([])
-        axs[nrow//2,0].set_ylabel(r'$m \xi_{\star}(m) / M_{\rm ecl} \propto \frac{{\rm d} N / {\rm d} \log_{10}m}{M_{\rm ecl}} \quad$ [#/$M_{\odot}$]', fontsize = 14)
-        axs[nrow-1, ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]',
-                                        fontsize = 15)
-        #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
-        cax = plt.axes([0.85, 0.2, 0.025, 0.7])
-        cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
-                            ticks=ticker.MultipleLocator(1)).set_label(
-                                label=r'[Z]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
-        fig.subplots_adjust(wspace=0., hspace=0.)
-        fig.savefig('figs/massweighted_stellarIMF_subplots_Zcolorbar.pdf')
-
-    def sIMF_subplot_Mecl_old(self, metallicity_v, Mecl_v, mstar_v, sIMF, res=20):
-        import matplotlib.pyplot as plt 
-        import itertools
-        import colorcet as cc
-        import matplotlib.ticker as ticker
-        #from mpl_toolkits import mplot3d
-        #from mpl_toolkits.mplot3d import Axes3D
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        Msun = r'$M_{\odot}$'
-        #cm = plt.cm.get_cmap(name='viridis')
-        cm = cc.cm.CET_L20
-        levels = np.linspace(np.log10(Mecl_v[0]), np.log10(Mecl_v[-1]), 100,
-                             endpoint=True)
-        CS3 = plt.contourf([[0,0],[0,0]], levels, cmap=cm)
-        plt.clf()
-        num_colors=len(Mecl_v)
-        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
-        currentColor = itertools.cycle(currentColors)
-        nrow, ncol = 3, 3 #util.find_closest_prod(res)
-        #fig, axs = plt.subplots(3, 3, figsize=(8,6))
-        fig, axs = plt.subplots(nrow, ncol, figsize=(7,5))
-        for i, ax in enumerate(axs.flat):
-            for j, M in enumerate(Mecl_v):
-                ax.annotate(r'$[Z]=$%.2f'%(metallicity_v[i]), xy=(0.5, 0.9), 
-                        xycoords='axes fraction', verticalalignment='top', 
-                        horizontalalignment='center', fontsize=10, alpha=.1)
-                ax.loglog(mstar_v, sIMF[j][i], color=next(currentColor))
-                ax.set_ylim(5e-3,1e11)
-                ax.set_xlim(2e-2,5e2)
+                ax.set_xlim(6e-2,1.6e2)
         #for nr in range(3):
         for nr in range(nrow):
             #for nc in range(3):
@@ -476,23 +358,48 @@ class Plots:
                 #if nr != 3-1:
                 if nr != nrow-1:
                     axs[nr,nc].set_xticklabels([])
-        #axs[1,0].set_ylabel(r'$\xi_{stellar}$', fontsize = 15)
-        #axs[2,1].set_xlabel(r'stellar mass [$M_{\odot}$]', fontsize = 15)
-        axs[nrow//2,0].set_ylabel(r'$\xi_{\star}={\rm d} N_{\star}/{\rm d} m$'
-                                  +f' [#/{Msun}]', fontsize = 15)
-        axs[nrow-1,ncol//2].set_xlabel(r'stellar mass [$M_{\odot}$]', 
-                                       fontsize = 15)
+        axs[nrow//2,0].set_ylabel(r'$\xi_{\rm IGIMF}={\rm d}N_{\star}/ {\rm d} m$'+f' ['+r'$\log_{10}$'+r'(#/$M_{\odot}$)'+f']', fontsize=15)
+        axs[nrow-1, ncol//2].set_xlabel(r'stellar mass $m_{\star}$ [$\log_{10}(M_{\odot})$]', fontsize=15)
+        axs[nrow//2,0].yaxis.set_label_coords(-.15, 1)
+        axs[nrow-1, ncol//2].xaxis.set_label_coords(0., -.15)
         #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
+        plt.subplots_adjust(bottom=0.12, right=0.83, top=.95)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
         cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
                             ticks=ticker.MultipleLocator(1)).set_label(
-                                label=r'$\log_{10}(M_{\rm ecl})$'+f' ['+
-                                r'$\log_{10}$'+f'({Msun})]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
+                                label=r'[Z]',size=15)
+        #fig.tight_layout(rect=[0,0,0.85,1])
         fig.subplots_adjust(wspace=0., hspace=0.)
-        fig.savefig('figs/stellarIMF_subplots_Meclcolorbar.pdf')
-
+        plt.show(block=False)
+        plt.savefig(f'figs/IGIMF_plots.pdf', bbox_inches='tight')
+    
+    def IGIMF_3Dlines_plot(self, df, SFR_v, metal_mass_fraction_v, mstar_v):
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        from mpl_toolkits.mplot3d import Axes3D
+        import colorcet as cc
+        import itertools
+        mpl.rcParams['legend.fontsize'] = 10
+        M = r'$M_{\odot}$'
+        cm = cc.cm.CET_D8
+        num_colors=len(metal_mass_fraction_v)
+        currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
+        currentColor = itertools.cycle(currentColors)
+        fig = plt.figure(figsize=(10,8))
+        ax = fig.add_subplot(projection ='3d') 
+        for s in SFR_v:      
+            for m in metal_mass_fraction_v: 
+                grid_sel = df.loc[((df['SFR']==s) & (df['metal_mass_fraction']==m))]
+                ax.plot(np.log10(grid_sel['mass_star']), np.log10(grid_sel['SFR']), zs=np.log10(grid_sel['IGIMF']), color=next(currentColor))
+        ax.set_xlabel(r'stellar mass $m_{\star}$ [$\log_{10}(M_{\odot})$]', fontsize=15)
+        ax.set_ylabel(r'SFR \[$M_{\odot}$/yr\]', fontsize=15)
+        ax.set_zlabel(r'$\xi_{\rm IGIMF}={\rm d}N_{\star}/ {\rm d} m$'+f' ['+r'$\log_{10}$'+r'(#/$M_{\odot}$)'+f']', fontsize=15)
+        ax.set_title(f'IGIMF', fontsize=17)
+        fig.tight_layout()
+        plt.show(block=False)
+        plt.savefig(f'figs/IGIMF_plot_3Dlines.pdf', bbox_inches='tight')
+        return None
+       
     def sIMF_subplot(self, metallicity_v, Mecl_v, mstar_v, sIMF, res=20):
         import matplotlib.pyplot as plt 
         import itertools
@@ -537,12 +444,12 @@ class Plots:
         axs[nrow//2,0].yaxis.set_label_coords(-.15, 1)
         axs[nrow-1, ncol//2].xaxis.set_label_coords(0., -.15)
         #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
+        plt.subplots_adjust(bottom=0.12, right=0.83, top=.95)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
         cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
                             ticks=ticker.MultipleLocator(1)).set_label(
                                 label=r'[Z]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
+        #fig.tight_layout(rect=[0,0,0.85,1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         fig.savefig('figs/stellarIMF_subplots_Zcolorbar.pdf')
 
@@ -593,12 +500,12 @@ class Plots:
         axs[nrow//2,0].yaxis.set_label_coords(-.2, 1)
         axs[nrow-1, ncol//2].xaxis.set_label_coords(0., -.15)
         #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
+        plt.subplots_adjust(bottom=0.12, right=0.83, top=.95)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
         cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
                             ticks=ticker.MultipleLocator(1)).set_label(
                                 label=r'[Z]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
+        #fig.tight_layout(rect=[0,0,0.85,1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         fig.savefig('figs/massweighted_stellarIMF_subplots_Zcolorbar.pdf')
 
@@ -607,11 +514,8 @@ class Plots:
         import itertools
         import colorcet as cc
         import matplotlib.ticker as ticker
-        #from mpl_toolkits import mplot3d
-        #from mpl_toolkits.mplot3d import Axes3D
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         Msun = r'$M_{\odot}$'
-        #cm = plt.cm.get_cmap(name='viridis')
         cm = cc.cm.CET_I1
         levels = np.linspace(np.log10(Mecl_v[0]), np.log10(Mecl_v[-1]), 100,
                              endpoint=True)
@@ -651,13 +555,13 @@ class Plots:
         axs[nrow//2,0].yaxis.set_label_coords(-.15, 1)
         axs[nrow-1, ncol//2].xaxis.set_label_coords(0., -.15)
         #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
+        plt.subplots_adjust(bottom=0.12, right=0.83, top=.95)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
         cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
                             ticks=ticker.MultipleLocator(1)).set_label(
                                 label=r'$\log_{10}(M_{\rm ecl})$'+f' ['+
                                 r'$\log_{10}$'+f'({Msun})]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
+        #fig.tight_layout(rect=[0,0,0.85,1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         fig.savefig('figs/stellarIMF_subplots_Meclcolorbar.pdf')
 
@@ -667,11 +571,8 @@ class Plots:
         import itertools
         import colorcet as cc
         import matplotlib.ticker as ticker
-        #from mpl_toolkits import mplot3d
-        #from mpl_toolkits.mplot3d import Axes3D
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         Msun = r'$M_{\odot}$'
-        #cm = plt.cm.get_cmap(name='viridis')
         cm = cc.cm.CET_I1
         levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), 100,
                              endpoint=True)
@@ -711,13 +612,13 @@ class Plots:
         axs[nrow//2,0].yaxis.set_label_coords(-.15, 1)
         axs[nrow-1, ncol//2].xaxis.set_label_coords(0., -.15)
         #divider = make_axes_locatable(axs.flat[-1])
-        plt.subplots_adjust(bottom=0., right=0.95, top=1.)
+        plt.subplots_adjust(bottom=0.12, right=0.83, top=.95)
         cax = plt.axes([0.85, 0.2, 0.025, 0.7])
         cbar = plt.colorbar(CS3, cmap=cm, cax=cax, format="%.2f", 
                             ticks=ticker.MultipleLocator(1)).set_label(
                                 label=r'$\log_{10}$(SFR)'+f' ['+
                                 r'$\log_{10}$'+f'({Msun}/yr)]',size=15)
-        fig.tight_layout(rect=[0,0,0.85,1])
+        #fig.tight_layout(rect=[0,0,0.85,1])
         fig.subplots_adjust(wspace=0., hspace=0.)
         fig.savefig('figs/stellarIMF_subplots_SFRcolorbar.pdf')
 
@@ -753,9 +654,9 @@ class Plots:
         ax.semilogy(D22low['logSFR'], np.power(10, D22low['Gamma'])*100, linestyle='--', color='purple', linewidth=2)
         ax.semilogy(D22high['logSFR'], np.power(10, D22high['Gamma'])*100, linestyle='--', color='purple', linewidth=2)
         ax.fill_between(D22high['logSFR'], np.power(10, D22high['Gamma'])*100, np.power(10, D22low['Gamma'])*100, where=(np.power(10, D22low['Gamma'].to_numpy())*100<np.power(10, D22high['Gamma'].to_numpy())*100),  alpha=0.1, color='purple', label=r'DKA22 $<10$ Myr')
-        ax.errorbar(Cook23binHalpha['sfrsig-bin'], Cook23binHalpha['Gamma'], xerr=Cook23binHalpha['sfrsig-u'], yerr=Cook23binHalpha['Gamma-u'], fmt='o', color='red', ecolor='red', elinewidth=3, capsize=0, label=r'C23 H$_{\alpha}$ $<10$ Myr', marker='s', alpha=0.8)
-        ax.errorbar(Cook23bin10['sfrsig-bin'], Cook23bin10['Gamma'], xerr=Cook23bin10['sfrsig-u'], yerr=Cook23bin10['Gamma-u'], fmt='o', color='black', ecolor='black', elinewidth=3, capsize=0,label=r'C23 res $<10$ Myr', marker='s', alpha=0.8)
-        #ax.errorbar(Cook23['logSFRsig'], Cook23['Gamma'], yerr=Cook23['Gamma-u'], fmt='o', color='blue', ecolor='blue', elinewidth=1, capsize=0,label=r'C23 lit', marker='o', alpha=0.4)
+        ax.errorbar(Cook23binHalpha['sfrsig-bin'], Cook23binHalpha['Gamma'], xerr=Cook23binHalpha['sfrsig-u'], yerr=Cook23binHalpha['Gamma-u'], color='red', ecolor='red', elinewidth=3, capsize=0, label=r'C23 H$_{\alpha}$ $<10$ Myr', marker='s', alpha=0.8)
+        ax.errorbar(Cook23bin10['sfrsig-bin'], Cook23bin10['Gamma'], xerr=Cook23bin10['sfrsig-u'], yerr=Cook23bin10['Gamma-u'], color='black', ecolor='black', elinewidth=3, capsize=0,label=r'C23 res $<10$ Myr', marker='s', alpha=0.8)
+        #ax.errorbar(Cook23['logSFRsig'], Cook23['Gamma'], yerr=Cook23['Gamma-u'], color='blue', ecolor='blue', elinewidth=1, capsize=0,label=r'C23 lit', marker='o', alpha=0.4)
         ax.set_xlim(-3.7, 0.5)
         ax.set_ylim(2e-2, 2e2)
         ax.legend(loc='lower right', fontsize=12, frameon=True)
@@ -801,22 +702,21 @@ class Plots:
         plt.savefig('figs/Fig11.pdf', bbox_inches='tight')
         #plt.show(block=False)
               
-    def k_Z_plot(self, Z_massfrac_v, k_IMF_Z_list, m_max_Z_list, Mecl_v,
-                 m_star_max=150):
+    def k_Z_plot(self, metallicity_v, k_IMF_Z_list, m_max_Z_list, Mecl_v, m_star_max=150):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker
+        import colorcet as cc
         from mpl_toolkits.axes_grid1 import make_axes_locatable
-        cm = plt.cm.get_cmap(name='plasma')
-        cm2 = plt.cm.get_cmap(name='plasma')
-        num_colors = len(Z_massfrac_v)
+        cm = cc.cm.CET_R1 #plt.cm.get_cmap(name='plasma')
+        cm2 = cc.cm.CET_R1 #plt.cm.get_cmap(name='plasma')
+        num_colors = len(metallicity_v)
         Z = [[0,0],[0,0]]
         #levels = np.linspace(np.log10(SFR_v[0]), np.log10(SFR_v[-1]), num_colors, endpoint=True)
-        levels = np.linspace(np.log10(Z_massfrac_v[0]/0.0142), 
-                             np.log10(Z_massfrac_v[-1]/0.0142), 
+        levels = np.linspace(metallicity_v[0], metallicity_v[-1], 
                              100, endpoint=True)
         CS3 = plt.contourf(Z, levels, cmap=cm)
         plt.clf()
-        SFR_colormap = (Z_massfrac_v) #np.log10(np.logspace(np.log10(SFR[0]), np.log10(SFR[-1]), 10, endpoint=True))
+        SFR_colormap = (metallicity_v) #np.log10(np.logspace(np.log10(SFR[0]), np.log10(SFR[-1]), 10, endpoint=True))
         currentColors = [cm(1.*i/num_colors) for i in range(num_colors)]
         currentColor = iter(currentColors)
         currentColors2 = [cm2(1.*i/num_colors) for i in range(num_colors)]
@@ -826,12 +726,12 @@ class Plots:
         #ax2 = ax.twinx()
         #ax.plot(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
         #ax.scatter(np.log10(Z_massfrac_v)-0.0142, [alpha1_Z_list[i][0] for i in range(len(SFR_v))], linewidth=3, color='magenta')
-        for i,Z in enumerate(Z_massfrac_v):
+        for i,Z in enumerate(metallicity_v):
             color = next(currentColor)
-            ax[1].semilogx(Mecl_v, np.log10(k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.4)
+            ax[1].semilogx(Mecl_v, np.log10(k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.8)
             #ax.plot((Mecl_v), (k_IMF_Z_list[i]), linewidth=3, color=color, alpha=0.4)
             color2 = next(currentColor2)
-            ax[0].semilogx(Mecl_v, m_max_Z_list[i], linewidth=3, color=color2, alpha=0.4)
+            ax[0].semilogx(Mecl_v, m_max_Z_list[i], linewidth=3, color=color2, alpha=0.8)
             #ax2.plot((Mecl_v), m_max_Z_list[i], linewidth=3, color=color2, alpha=0.4)
         ax[1].set_ylabel(r'$\log_{10}(k_{\rm IMF})$', fontsize=15)
         ax[1].set_xlabel(r'$\log_{10}(M_{\rm ecl})$[$M_{\odot}$]', fontsize=15)

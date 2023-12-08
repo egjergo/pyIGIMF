@@ -5,7 +5,7 @@ import pandas as pd
 import dill
 import os
 
-class GalCemInterpolant(object):
+class pyIGIMFInterpolant(object):
     def __init__(self,df,ycol,tf_funs={},name='',plot=None,fig_root='./',fig_view_angle=135,colormap=False):
         
         # initial setup 
@@ -42,19 +42,19 @@ class GalCemInterpolant(object):
         self.train_metrics = self.get_metrics(df)
         # optional plotting in transformed space
         if plot is None: return
-        if len(self.xcols)!=2: raise Exception("GalCemInterpolant currently only supports plotting models with 2D domain.")
+        if len(self.xcols)!=2: raise Exception("pyIGIMFInterpolant currently only supports plotting models with 2D domain.")
         dxs = plot
         nrows = len(dxs) * 2
         from matplotlib import pyplot
         cmap = pyplot.cm.get_cmap('copper') #pyplot.cm.get_cmap('binary')
         rcount,ccount=82,82
         cmdot,colordots,colordotstf = 'r','r','r'
-        if colormap:
-            cmdot = pyplot.cm.get_cmap('Paired')
-            s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
-            s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
-            colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
-            colordotstf = colordots
+        #if colormap:
+        #    cmdot = pyplot.cm.get_cmap('Paired')
+        #    s_lifetimes_p98 = pd.read_csv('galcem/input/starlifetime/portinari98table14.dat')
+        #    s_lifetimes_p98.columns = [name.replace('#M','M').replace('Z=0.','Z') for name in s_lifetimes_p98.columns]
+        #    colordots = np.array([s_lifetimes_p98[c].to_numpy() for c in s_lifetimes_p98.columns[1:]]).flatten()
+        #    colordotstf = colordots
         fig = pyplot.figure(figsize=(12,6*nrows))
         nticks = 257
         sepfrac = 0.1
@@ -166,13 +166,13 @@ class GalCemInterpolant(object):
         return metrics
     
     def __repr__(self):
-        s = 'GalCemInterpolant[%s](%s)\n'%(self.name,','.join(self.xcols))
+        s = 'pyIGIMF Interpolant[%s](%s)\n'%(self.name,','.join(self.xcols))
         s += '\ttrain data description\n\t\t%s'%str(self.descrip).replace('\n','\n\t\t')
         s += '\n\ttrain data metrics\n'
         for metric,val in self.train_metrics.items(): s += '\t\t%25s: %.2e\n'%(metric,val)
         return s
 
-class LinearAndNearestNeighbor_GCI(GalCemInterpolant):
+class LinearAndNearestNeighbor_GCI(pyIGIMFInterpolant):
     
     def __init__(self, df, ycol, *args, **kwargs):
         super().__init__(df, ycol, *args, **kwargs)

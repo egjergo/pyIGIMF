@@ -29,7 +29,7 @@ def find_closest_prod(number):
         nu += 1
     return nl, nu
        
-def weighted_func(M, func, *args, **kwargs):
+def mass_weighted_func(M, func, *args, **kwargs):
     return np.multiply(M, func(M, *args, **kwargs))
 
 def int_plaw(ll, ul, power):
@@ -39,7 +39,7 @@ def integral_powerlaw(ll, ul, power):
     if ll < ul:
         return int_plaw(ll, ul, power)
     else:
-        return 0
+        return 0.
 
 def normalized(x, func, condition=None, *args, **kwargs):
     '''Checks whether or not the mass function has been normalized'''
@@ -55,15 +55,24 @@ def get_norm(normalization, IMF, Mtot:float, min_val:float, max_val:float, *args
     '''get normalization, where normalization and IMF are both functions '''
     k, M = normalization(IMF, Mtot, min_val, min_val, *args, **kwargs)
     IMF_func = lambda mass: k * IMF(mass, m_max=M, *args, **kwargs)
-    IMF_weighted_func = lambda mass: weighted_func(mass, IMF_func,
+    IMF_mass_weighted_func = lambda mass: mass_weighted_func(mass, IMF_func,
                                                    *args, **kwargs)
-    return k, M, np.vectorize(IMF_func), np.vectorize(IMF_weighted_func)
+    return k, M, np.vectorize(IMF_func), np.vectorize(IMF_mass_weighted_func)
 
-def normalization_ECMF(ECMF, beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
+def normalization_ECMF(ECMF_func, beta, Mtot, lower_lim, upper_lim, *args) -> (float, float):
+    print(f'{beta=}, \t{upper_lim=}')
     k_ECMF = lambda x: np.divide(1-beta, upper_lim**(1-beta) - x**(1-beta))
-    weighted_ECMF = lambda x: integral_powerlaw(lower_lim, upper_lim, beta-1)
-    func = lambda x: (k_ECMF(x) * weighted_ECMF(x) - Mtot)
-    sol = optimize.root_scalar(func, x0=1e0, x1=1e5, rtol=1e-8)
+    #def k_ECMF(x):
+    #    return np.reciprocal(integral_powerlaw(x, upper_lim, beta))
+    #def k_ECMF(x):
+    #    if np.logical_and(x >= lower_lim, x < upper_lim):
+    #        print(f'{x=}')
+    #        return np.reciprocal(integral_powerlaw(x, upper_lim, beta))
+    #    else:
+    #        return 0.
+    mass_weighted_ECMF = lambda M_ecl: integral_powerlaw(lower_lim, upper_lim, beta-1)#mass_weighted_func(M_ecl, ECMF_func)
+    func = lambda x: (k_ECMF(x) * mass_weighted_ECMF(x) - Mtot)
+    sol = optimize.root_scalar(func, x0=1e0, x1=1e5, rtol=1e-15)
     Mecl_max = sol.root
     return k_ECMF(Mecl_max), Mecl_max
         
@@ -77,10 +86,10 @@ def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (fl
             return (np.reciprocal(integral_powerlaw(x, 1., alpha2) 
                                 + integral_powerlaw(1., upper_lim, alpha3)))
         if np.logical_and(x >= 1., x <= upper_lim):
-            return (np.reciprocal(integral_powerlaw(x, upper_lim, alpha3)))
+            return np.reciprocal(integral_powerlaw(x, upper_lim, alpha3))
         else:
             return 0.
-    def weighted_IMF(x):
+    def mass_weighted_IMF(x):
         if np.logical_and(x >= lower_lim, x < 0.5):
             return (2 * integral_powerlaw(0.08, x, alpha1-1))
         if np.logical_and(x >= 0.5, x < 1.):
@@ -92,7 +101,7 @@ def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (fl
                     + integral_powerlaw(1., x, alpha3-1))
         else:
             return 0.
-    func = lambda x: (k(x) * weighted_IMF(x) - Mtot)
+    func = lambda x: (k(x) * mass_weighted_IMF(x) - Mtot)
     try:
         sol = optimize.root_scalar(func, method='bisect', rtol=1e-15,
                                    bracket=(lower_lim, upper_lim))
@@ -101,38 +110,7 @@ def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (fl
         m_max = upper_lim
     #print(f'{Mtot = },\t {m_max = },\t {k(m_max)=}')
     return k(m_max), m_max
-
-
-    def get_lists(self):
-        IMF_v_Z_list = []
-        alpha1_Z_list = []
-        alpha1_Z_list = []
-        m_max_Z_list = []
-        k_IMF_Z_list = []
-        for Z in Z_massfrac_v:
-            IMF_v_list = []
-            alpha1_list = []
-            alpha3_list = []
-            m_max_list = []
-            k_IMF_list = []
-            for M in Mecl_v:
-                igimf4 = IGIMF4.IGIMF(Z, downsizing_obj.SFR)
-                sIMF = igimf4.stellar_IMF(M)
-                #print (f"M=%.2e,\t alpha1=%.2f,\t alpha2=%.2f,\t alpha3=%.2f,\t m_max = %.2e,\t [Z] = %.2f"%(M, sIMF[4], sIMF[5], sIMF[6], sIMF[1], igimf4.metallicity))
-                #IMF_v = sIMF[2](mstar_v)
-                alpha1_list.append(sIMF[4])
-                alpha3_list.append(sIMF[6])
-                m_max_list.append(sIMF[1])
-                k_IMF_list.append(sIMF[0])
-                IMF_v_list.append(IMF_v)
-                #igimf4.ECMF_plot(Mecl_v, ECMF_v)
-            IMF_v_Z_list.append(IMF_v_list)
-            alpha1_Z_list.append(alpha1_list)
-            alpha3_Z_list.append(alpha3_list)
-            m_max_Z_list.append(m_max_list)
-            k_IMF_Z_list.append(k_IMF_list)
-        return k_IMF_Z_list, m_max_Z_list, IMF_v_Z_list, alpha1_Z_list, alpha1_Z_list
-        
+       
         
 class Downsizing:
     """Downsizing relations as introduced by Thomas et al. (2005)"""
