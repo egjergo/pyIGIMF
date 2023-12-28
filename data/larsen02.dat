@@ -1,0 +1,43 @@
+# From Larsen (2002) https://ui.adsabs.harvard.edu/abs/2002AJ....124.1393L/abstract
+# Galaxies from Larsen & Richtler (2000) and Billett, Hunter & Elmegreen (2002). 
+# 
+# >>>import pandas as pd
+# >>>l02 = pd.read_csv('data/larsen02.dat', sep=';', comment='#', index_col=False)
+# 
+Galaxy;SFRdensity(Msun/yr/kpc^2);A(kpc^2);M_V_brightest(mag);References
+NGC45           ; 0.23e-3 ; 110 ; -8.8 ;Larsen & Richtler (2000)
+NGC247          ; 0.18e-3 ; 200 ; -10.2 ;Larsen & Richtler (2000)
+NGC300          ; 0.49e-3 ; 159 ; -9.9 ;Larsen & Richtler (2000)
+NGC628          ; 1.88e-3 ; 527 ; -11.3 ;Larsen & Richtler (2000)
+NGC1156         ; 3.07e-3 ; 60  ; -11.1 ;Larsen & Richtler (2000)
+NGC1313         ; 4.04e-3 ; 105 ; -12.1 ;Larsen & Richtler (2000)
+NGC2403         ; 0.97e-3 ; 348 ; -9.9 ;Larsen & Richtler (2000)
+NGC2835         ; 0.73e-3 ; 126 ; -10.9 ;Larsen & Richtler (2000)
+NGC2997         ; 3.07e-3 ; 606 ; -12.9 ;Larsen & Richtler (2000)
+NGC3184         ; 1.72e-3 ; 230 ; -10.6 ;Larsen & Richtler (2000)
+NGC3621         ; 1.67e-3 ; 527 ; -11.9 ;Larsen & Richtler (2000)
+NGC4395         ; 0.25e-3 ; 200 ; -9.1 ;Larsen & Richtler (2000)
+NGC5204         ; 0.83e-3 ; 38  ; -9.6 ;Larsen & Richtler (2000)
+NGC5236         ; 13.76e-3 ; 166 ; -11.7 ;Larsen & Richtler (2000)
+NGC5585         ; 0.32e-3 ; 105 ; -10.8 ;Larsen & Richtler (2000)
+NGC6744         ; 0.62e-3 ; 695 ; -11.0 ;Larsen & Richtler (2000)
+NGC6946         ; 4.60e-3 ; 552 ; -13.0 ;Larsen & Richtler (2000)
+NGC7424         ; 0.18e-3 ; 960 ; -11.4 ;Larsen & Richtler (2000)
+NGC7793         ; 2.12e-3 ; 66 ; -10.4 ;Larsen & Richtler (2000)
+NGC1569         ; 9.43e-3 ; 13  ; -13.9 ;Larsen & Richtler (2000), literature data
+NGC1705         ; 2.16e-3 ; 6   ; -13.7 ;Larsen & Richtler (2000), literature data
+NGC1741         ; 12.78e-3 ; 382 ; -15.0 ;Larsen & Richtler (2000), literature data
+NGC5253         ; 7.29e-3 ; 29  ; -11.1 ;Larsen & Richtler (2000), literature data
+IC1613          ; 0.05e-3 ; 9 ; -5.8 ;Larsen & Richtler (2000), literature data
+LMC             ; 1.52e-3 ; 79 ; -10.0 ;Larsen & Richtler (2000), literature data
+NGC4214         ; 3.80e-3 ; 21 ; -12.04 ;Billett, Hunter & Elmegreen (2002)
+NGC2366         ; 1.95e-3 ; 19 ; -9.51 ;Billett, Hunter & Elmegreen (2002)
+DDO50           ; 1.26e-3 ;  8.6 ; -7.91 ;Billett, Hunter & Elmegreen (2002)
+DDO168          ; 0.85e-3 ; 5.1 ; -7.58 ;Billett, Hunter & Elmegreen (2002)
+DDO165          ; 0.18e-3 ; 3.0 ; -8.34 ;Billett, Hunter & Elmegreen (2002)
+SexA            ; 2.29e-3  ; 1.6 ; -7.12 ;Billett, Hunter & Elmegreen (2002)
+NGC3521         ; 3.58e-3  ; 382 ; -11.5 ;Lick data
+NGC4258         ; 0.702e-3 ;1414 ; -12.6 ;Lick data
+NGC5055         ; 2.98e-3  ; 504 ; -11.4 ;Lick data
+NGC5194         ; 8.21e-3 ; 578 ; -12.8 ;Lick data
+IC2574          ; 0.17e-3  ; 121 ; -10.5 ;Lick data

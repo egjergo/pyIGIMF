@@ -1,0 +1,33 @@
+# From Bastian N. (2008) https://ui.adsabs.harvard.edu/abs/2008MNRAS.390..759B/abstract
+# Galaxies and clusters taken from the literature or derived in the current study.
+# (a) The brightest cluster in the central star-forming region of the galaxy.  See text for details.
+# (b) We have used the brightest cluster in their sample and corrected for E($B-V$)=0.4 mag which is the average extinction for the main body of the galaxy.
+# We have also excluded the nuclear star-forming region (three knots) as they are likely to have extended star-formation histories (Pasquali et al. 2004).
+# (c) Corrected for an extinction ($A_{\rm V}$) of 0.2 mag. 
+# (d) See text for details on the derivation of $M_{\rm V}^{\rm brightest}$.
+#
+# Read with:
+# >>> import pandas as pd
+# >>> b08 = pd.read_csv('data/bastian08.dat', sep=';', comment='#', index_col=False)
+#
+Galaxy;M_V_brightest(mag);SFR(Msun/yr);References;notes;location
+NGC-7252;-13.4;5.4;Miller et al. 1997, Kneirman et al. 2003;a;Clusters in Galaxies
+ESO0338-IG04;-15.5;3.2;Ostlin et al. 1998,2007, Schmitt et al. 2006;-;Clusters in Galaxies
+NGC-6240;-16.4;140;Pasquali et al. 2003, S03;b;Clusters in Galaxies
+NGC-2207;-13.6;2.2;Elmegreen et al. 2001;-;Clusters in Galaxies
+NGC-1275;-15.3;12.4;Holtzman et al. 1992, S03;-;Clusters in Galaxies
+M82-(A1);-14.8;7;Smith et al. 2006, S03;-;Clusters in Galaxies
+NGC-7673;-14.7;4.9;Homeier et al. 2002, S03;c;Clusters in Galaxies
+NGC-6745;-15.0;12.2;de Grijs et al. 2003, S03;-;Clusters in Galaxies
+NGC-1140;-14.8;0.8;Moll et al. 2007;-;Clusters in Galaxies
+NGC-3597;-13.3;10.8;Carlson et al. 1999, S03;-;Clusters in Galaxies
+IRAS-19115-2124;-16.8;192;Vaisanen et al. 2008;d;Clusters in Galaxies
+#
+# Clusters in individual star-forming regions
+NGC-1533-Assn-1;-7.17;0.00037;Werk et al. 2008,Ryan-Weber et al. 2004;-;Clusters in individual star-forming regions
+NGC-1533-Assn-2;-5.71;0.00025;Werk et al. 2008,Ryan-Weber et al. 2004;-;Clusters in individual star-forming regions
+NGC-1533-Assn-5;-6.16;0.00018;Werk et al. 2008,Ryan-Weber et al. 2004;-;Clusters in individual star-forming regions
+#
+# Clusters presented in this work
+NGC-2623;-14.5;51.;S03;-;new clusters from Bastian-08
+NGC-3256;-15.7;46;S03;-;new clusters from Bastian-08

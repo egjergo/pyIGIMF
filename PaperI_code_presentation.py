@@ -22,12 +22,12 @@ class Vectors:
         # Vectors
         self.M_igal_v = self.logspace_v_func(resolution, minlog=6, maxlog=11)
         self.Mecl_v = self.logspace_v_func(resolution, minlog=np.log10(5), maxlog=10)
-        self.Mecl_v = np.array([5.00000000e+00, 1.e+03, 1.e+06, 1.00000000e+10])
+        #self.Mecl_v = np.array([5.00000000e+00, 1.e+03, 1.e+06, 1.00000000e+10])
         self.Z_massfrac_v = self.logspace_v_func(resolution, minlog=-7, maxlog=1)#, maxlog=.5) 
         self.Z_massfrac_v *= self.solar_metallicity # to make subplots labels consistent
         self.mstar_v = np.logspace(np.log10(self.m_star_min),
                                    np.log10(self.m_star_max-0.1), num=100)
-        self.SFR_v = self.logspace_v_func(resolution, minlog=-5.5, maxlog=4)
+        self.SFR_v = self.logspace_v_func(resolution, minlog=-6, maxlog=6)
         self.metallicity_v = np.log10(self.Z_massfrac_v/self.solar_metallicity)
         #self.metallicity_v = np.array([-4, -1., 0., .5])
         self.Z_massfrac_v = np.power(10., self.metallicity_v) * self.solar_metallicity
@@ -93,12 +93,16 @@ class ECMFbySFR(SingleECMF):
     
     def all_plots(self):
         self.beta_ECMF_bySFR_plot()
+        self.Meclmax_vs_SFR_observations()
         self.MeclMax_bySFR_plot()
         self.Mecl_power_beta_plot()
         self.ECMF_plots()
     
     def beta_ECMF_bySFR_plot(self):
         self.plots.beta_ECMF_bySFR_plot(self.SFR_v, self.beta_ECMF_list)
+    
+    def Meclmax_vs_SFR_observations(self):
+        self.plots.Meclmax_vs_SFR_observations(self.SFR_v, self.MeclMax_list)
     
     def MeclMax_bySFR_plot(self):
         self.plots.MeclMax_bySFR_plot(self.SFR_v, self.MeclMax_list)
@@ -303,7 +307,6 @@ class IGIMFplots(InstanceIGIMF):
         self.SFR_v_fit = np.logspace(np.log10(np.min(SFR_v)), np.log10(np.max(SFR_v)))
         self.mstar_v_fit = np.logspace(np.log10(np.min(mstar_v)), np.log10(np.max(mstar_v)))
         self.IGIMF_vmetal_mass_fraction_v_fit = np.logspace(np.log10(np.min(metal_mass_fraction_v)), np.log10(np.max(metal_mass_fraction_v)))
-
         
     def sIMF_subplot(self):
         return self.plots.sIMF_subplot(self.metallicity_v, self.Mecl_v, 
@@ -322,13 +325,10 @@ class IGIMFplots(InstanceIGIMF):
                                             self.mstar_v, self.IMF_Z_v_list)
 
 
-
-
 class Alpha3_grid:
     def __init__(self):
         from sklearn.model_selection import ParameterGrid
 
-        
 
 if __name__ == '__main__':
     metal_mass_fraction = 1e-1 * 0.0134
@@ -370,3 +370,4 @@ if __name__ == '__main__':
     
     #create_grid = IGIMFGrid()
     #create_grid.by_Z_by_SFR_pickle()
+    # 

@@ -2,6 +2,11 @@ import numpy as np
 from igimf import util
 
 class Plots:
+    def __init__(self, dir_path='figs'):
+        import os
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+            
     # Plotting functions
     def Migal_plot(self, M_igal_v, SFR, downsizing_time):
         from matplotlib import pyplot as plt
@@ -77,6 +82,40 @@ class Plots:
         fig.tight_layout()
         plt.savefig(f'figs/MeclMax_bySFR_plot.pdf', bbox_inches='tight')
         #plt.show(block=False)
+        
+             
+    def Meclmax_vs_SFR_observations(self, SFR_v, MeclMax_list, k_ML=0.01):
+        import pandas as pd
+        from matplotlib import pyplot as plt
+        import matplotlib.ticker as ticker
+        r13 = pd.read_csv('data/randriamanakoto13.dat', sep=',', comment='#', index_col=False)
+        l02 = pd.read_csv('data/larsen02.dat', sep=';', comment='#', index_col=False)
+        b08 = pd.read_csv('data/bastian08.dat', sep=';', comment='#', index_col=False)
+        def mag_to_mass(mag_V):
+            #mag_V = mag_K + 2
+            Mecl_max = np.power(10, np.divide(4.79 - mag_V, 2.5)) * k_ML
+            return Mecl_max
+        mag_to_mass = np.vectorize(mag_to_mass)
+        Msun = r'$M_{\odot}$'
+        fig, ax = plt.subplots(1,1, figsize=(6,4))
+        ax.loglog(SFR_v, MeclMax_list, linewidth=2, color='navy')
+        print(f'{SFR_v=}')
+        print(f'{MeclMax_list=}')
+        ax.scatter((r13['SFR(Msun/yr)']), (mag_to_mass(r13['M_K_brightest(mag)']+2)), label='Randriamanakoto+13', marker='o')
+        ax.scatter((b08['SFR(Msun/yr)']), (mag_to_mass(b08['M_V_brightest(mag)'])), label='Bastian08', marker='s')
+        ax.scatter((l02['SFRdensity(Msun/yr/kpc^2)']*l02['A(kpc^2)']), (mag_to_mass(l02['M_V_brightest(mag)'])), label='Larsen02', marker='^')
+        ax.scatter(SFR_v, MeclMax_list, linewidth=2, color='navy',s=1)
+        ax.set_ylabel(r'$M_{\rm ecl,max}$ [%s]'%(Msun), fontsize=15)
+        ax.set_xlabel(r'SFR [%s/yr]'%(Msun), fontsize=15)
+        #ax.set_ylim(10**(-1.5),1e8)
+        ax.set_xlim(1e-6,.5e3)
+        #ax.set_xlim(1e-6, 1e6)
+        plt.yticks(fontsize=15)
+        plt.xticks(fontsize=15)
+        ax.tick_params(width=2)
+        fig.tight_layout()
+        plt.savefig(f'figs/Meclmax_vs_SFR_observations.pdf', bbox_inches='tight')
+        
         
     def Mecl_power_beta_plot(self, Mecl_v, beta_ECMF_list):
         from matplotlib import pyplot as plt
@@ -701,7 +740,7 @@ class Plots:
         fig.tight_layout()
         plt.savefig('figs/Fig11.pdf', bbox_inches='tight')
         #plt.show(block=False)
-              
+         
     def k_Z_plot(self, metallicity_v, k_IMF_Z_list, m_max_Z_list, Mecl_v, m_star_max=150):
         from matplotlib import pyplot as plt
         import matplotlib.ticker as ticker

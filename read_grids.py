@@ -30,8 +30,8 @@ SFR_v_fit = np.logspace(np.log10(np.min(SFR_v)), np.log10(np.max(SFR_v)))
 mstar_v_fit = np.logspace(np.log10(np.min(mstar_v)), np.log10(np.max(mstar_v)))
 metal_mass_fraction_v_fit = np.logspace(np.log10(np.min(metal_mass_fraction_v)), np.log10(np.max(metal_mass_fraction_v)))
 
-#get_IGIMF = IGIMF_interpolation({'metal_mass_fraction':0.0134, 'SFR':1})
-#IGIMF = get_IGIMF(mass_star)
+get_IGIMF = IGIMF_interpolation({'metal_mass_fraction':0.0134, 'SFR':1})
+IGIMF = get_IGIMF(mass_star)
 
 
 #Retrieve a value

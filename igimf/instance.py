@@ -8,7 +8,7 @@ The Parameters superclass is parent to "ECMF", "StellarIMF", and "IGIMF".
 The ECMF subclass is structured as follows:
     |-- ECMF (normalized)
     |-- |-- embedded_cluster_MF (not normalized)
-    |-- |-- |-- beta
+    |-- |-- |-- beta_func
 
 The StellarIMF subclass is structured as follows:
     |-- stellar_IMF (normalized)
@@ -28,15 +28,15 @@ from scipy import optimize
 import scipy.integrate as integr
 import pandas as pd
 import igimf.util as util
-#from ..igimf import util
 
 class Parameters:
     '''
     Parameters employed in all the subclasses
     
     INPUT
-        metal_mass_fraction    [dimensionless] initial metallicity of the e.cl.
-        SFR                    [Msun/yr] star formation rate
+        metal_mass_fraction    [dimensionless] initial mass fraction 
+                                of metals of the embedded cluster.
+        SFR                    [Msun/yr] star formation rate in the galaxy.
         
     DEFAULT PARAMETERS
         solar_metallicity    [dimensionless] M_Z_sun/M_sun (Asplund+09)
@@ -50,15 +50,14 @@ class Parameters:
         '''
     def __init__(self, metal_mass_fraction: float, SFR: float,
                 solar_metallicity=0.0134, delta_alpha=63.,
-                m_star_max = 150.1, m_star_min=0.07, suppress_warnings=False,
-                M_ecl_max = 1e10, M_ecl_min=5., delta_t=1e7):
+                m_star_max = 150.00001, m_star_min=0.07, suppress_warnings=False,
+                M_ecl_max = 1e9, M_ecl_min=5., delta_t=1e7):
         vars = locals() 
         self.__dict__.update(vars)
         del self.__dict__["self"] 
         self.SFR = SFR 
         self.Mtot = self.SFR * self.delta_t 
         self.metal_mass_fraction = metal_mass_fraction
-        #print(f'{self.metal_mass_fraction=}, \t{self.solar_metallicity}')
         self.metallicity = np.log10(self.metal_mass_fraction
                                     / self.solar_metallicity)
         if suppress_warnings:
@@ -75,32 +74,38 @@ class ECMF(Parameters):
     i.e., evaluate ECMF at time t where the galaxy is characterized by
     a SFR(t) and a Z(t) -- but only SFR(t) affects the ECMF.
     '''
-    def __init__(self, SFR=None, metal_mass_fraction=None):
+    def __init__(self, SFR:float=None, metal_mass_fraction:float=None):
         super().__init__(metal_mass_fraction, SFR)
         self.beta_ECMF = self.beta_func()
         self.call_ECMF()
 
     def beta_func(self):
-        r"""Eq. (11) ECMF slope"""
-        return -0.106 * np.log10(self.SFR) + 2
+        """Eq. (11) ECMF slope"""
+        return -0.106 * np.log10(self.SFR) + 2.
+    
+    def ECMF_func(self, M_ecl, beta):
+        util.plaw(M_ecl, neg_exponent=beta)
+        return 
     
     def embedded_cluster_MF(self, M_ecl, m_max=None):
         r"""Eq. (8) ECMF (not normalized)"""
         if M_ecl>=self.M_ecl_min:
-            return util.normalized(M_ecl, M_ecl**(-self.beta_ECMF), 
-                                   condition=m_max)
+           return util.normalized(M_ecl, M_ecl**(-self.beta_ECMF), 
+                                  condition=m_max)
         else:
-            return 1e-32
+           return 0.#1e-32
                
     def call_ECMF(self):
         '''ECMF (normalized)'''
-        self.k_ecl, self.M_max = util.normalization_ECMF(self.embedded_cluster_MF,
+        self.k_ecl, self.M_max = util.normalization_ECMF(
+                        self.embedded_cluster_MF,
                         self.beta_ECMF, self.SFR * self.delta_t, 
                         self.M_ecl_min, self.M_ecl_max)
-        #print(f'{self.k_ecl=}')
-        ECMF_func = lambda M_ecl: (self.k_ecl *
-                                self.embedded_cluster_MF(M_ecl, m_max=self.M_max))
-        ECMF_mass_weighted_func = lambda M_ecl: util.mass_weighted_func(M_ecl, ECMF_func)
+        def ECMF_func(M_ecl):
+            return (self.k_ecl *
+                    self.embedded_cluster_MF(M_ecl, m_max=self.M_max))
+        def ECMF_mass_weighted_func(M_ecl):
+            return util.mass_weighted_func(M_ecl, ECMF_func)
         self.ECMF_func = np.vectorize(ECMF_func)
         self.ECMF_mass_weighted_func = np.vectorize(ECMF_mass_weighted_func)
     
@@ -173,6 +178,8 @@ class StellarIMF(Parameters):
         return -0.41 * x_alpha_3 + 1.94
         
     def initial_mass_function(self, m, alpha_3=None, m_max=None):
+        util.Koupa01(m, alpha1=self.alpha1, alpha2=self.alpha2, alpha3=alpha3,
+            lim12=0.5, lim23=1., Ml=0.07, Mu=150.)
         '''stellar IMF (not normalized)'''
         if np.logical_and(m>=self.m_star_min, m<0.5):
             return m**(-self.alpha_1) * 2
