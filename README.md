@@ -1,2 +1,2 @@
 # IGIMF
-Based on Yan, Jerabkova, and Kroupa (2021, A&amp;A)
+Gjergo et al. (2024, in prep.)
