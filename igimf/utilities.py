@@ -122,7 +122,7 @@ def powerlaw_continuity(limit, lower_exp, upper_exp):
     """
     return limit**(upper_exp - lower_exp)
 
-def IMF_normalization_constants(os_norm=1, norm_wrt=150, sIMF_params={
+def IMF_normalization_constants_OLD(os_norm=1, norm_wrt=150, sIMF_params={
                             'alpha1': 1.3,
                             'alpha2': 2.3,
                             'alpha3': 2.3,
@@ -132,9 +132,9 @@ def IMF_normalization_constants(os_norm=1, norm_wrt=150, sIMF_params={
                             'Mu': 150
                         }):
     # The normalisation constants are calculated such that the function is continuous.
-    a1 = os_norm 
-    a2 = a1 * powerlaw_continuity(sIMF_params['Mlim12'], sIMF_params['alpha1'], sIMF_params['alpha2'])
-    a3 = a2 * powerlaw_continuity(sIMF_params['Mlim23'], sIMF_params['alpha2'], sIMF_params['alpha3'])
+    a1 = 2 #os_norm 
+    a2 = 1 #a1 * powerlaw_continuity(sIMF_params['Mlim12'], sIMF_params['alpha1'], sIMF_params['alpha2'])
+    a3 = 1 #a2 * powerlaw_continuity(sIMF_params['Mlim23'], sIMF_params['alpha2'], sIMF_params['alpha3'])
     
     # The IMF function is calculated using the broken power law.
     IMF_func = lambda Mstar: broken_powerlaw(Mstar, a1, a2, a3, sIMF_params=sIMF_params)
@@ -146,6 +146,35 @@ def IMF_normalization_constants(os_norm=1, norm_wrt=150, sIMF_params={
     a1 /= N_norm
     a2 /= N_norm
     a3 /= N_norm 
+    
+    return a1, a2, a3
+
+def IMF_normalization_constants(os_norm=1, norm_wrt=150, sIMF_params={
+                            'alpha1': 1.3,
+                            'alpha2': 2.3,
+                            'alpha3': 2.3,
+                            'Ml': 0.08,
+                            'Mlim12': 0.5,
+                            'Mlim23': 1.,
+                            'Mu': 150
+                        }):
+    '''Updated IMF_normalization_constants function where a3 is always equal to 1
+    This gives stability to the optimal sampling minimization function'''
+    # The normalisation constants are calculated such that the function is continuous.
+    a1 = os_norm 
+    a2 = a1 * powerlaw_continuity(sIMF_params['Mlim12'], sIMF_params['alpha1'], sIMF_params['alpha2'])
+    a3 = a2 * powerlaw_continuity(sIMF_params['Mlim23'], sIMF_params['alpha2'], sIMF_params['alpha3'])
+    
+    # The IMF function is calculated using the broken power law.
+    IMF_func = lambda Mstar: broken_powerlaw(Mstar, a1, a2, a3, sIMF_params=sIMF_params)
+    
+    # The normalisation constant is calculated by integrating the IMF function from 0.08 to 150 Msun.
+    #N_norm = a3 * IMF_func(norm_wrt)
+    
+    # The normalisation constants are adjusted such that the integral of the IMF function is 1.
+    a1 /= a3
+    a2 /= a3
+    a3 /= a3 
     
     return a1, a2, a3
 
@@ -196,6 +225,7 @@ def integrate_powerlaw(lower_limit, upper_limit, exponent, weighted=False):
     float
         The result of the integral.
     """
+    #print(f'Calling integrate_powerlaw with lower_limit={lower_limit}, upper_limit={upper_limit}, exponent={exponent}, weighted={weighted}')
     if weighted == False:
         power = 1
     else:
@@ -203,9 +233,10 @@ def integrate_powerlaw(lower_limit, upper_limit, exponent, weighted=False):
     if np.isclose(power-exponent, 0):
         return np.log(upper_limit) - np.log(lower_limit)
     else:
+        #print(f'{lower_limit=}, {power=}, {exponent=}')
         return (upper_limit**(power-exponent) - lower_limit**(power-exponent)) / (power-exponent)
 
-def integral_powerlaw(ll, ul, power):
+def integral_powerlaw(lower_limit, upper_limit, exponent, weighted=False):
     """
     Return the integral of a simple power law x**(-power) from ll to ul.
     
@@ -215,7 +246,7 @@ def integral_powerlaw(ll, ul, power):
         The lower limit of the integral.
     ul : float
         The upper limit of the integral.
-    power : float
+    exponent : float
         The exponent of the power law.
     
     Returns
@@ -223,12 +254,12 @@ def integral_powerlaw(ll, ul, power):
     float
         The result of the integral.
     """
-    if ll < ul:
-        return integrate_powerlaw(ll, ul, power)
+    if lower_limit < upper_limit:
+        return integrate_powerlaw(lower_limit, upper_limit, exponent, weighted=weighted)
     else:
         return 0.
     
-def normalization_check(x: float, func: float #Callable[..., Any]
+def normalization_check(x: float, func: float 
                         , condition: Optional[float]=None):
     """
     If condition is None, return the function.
@@ -295,7 +326,7 @@ def optimal_sampling_ECMF(beta, Mtot, lower_lim, upper_lim):
     """
 
     def k_ECMF(x):
-        k_ECMF = integrate_powerlaw(x, upper_lim, beta, weighted=False)
+        k_ECMF = integral_powerlaw(x, upper_lim, beta, weighted=False)
         return np.reciprocal(k_ECMF)
     
     def minimization_func(x, lower_lim, beta, Mtot, upper_lim):
@@ -320,9 +351,9 @@ def optimal_sampling_ECMF(beta, Mtot, lower_lim, upper_lim):
         float
             The difference between the total mass and the integral of the ECMF.
         """
-        I1 = integrate_powerlaw(lower_lim, x, beta, weighted=True)
-        I2 = integrate_powerlaw(x, upper_lim, beta, weighted=False)
-        return Mtot * I2 - I1
+        I1 = integral_powerlaw(lower_lim, x, beta, weighted=True)
+        I2 = integral_powerlaw(x, upper_lim, beta, weighted=False)
+        return(Mtot) * I2 - I1
     
     def solve_x(lower_lim, beta, Mtot, upper_lim, x_guess=None):
 
@@ -352,58 +383,42 @@ def optimal_sampling_IMF(M_ecl, IGIMF_params):
         if np.logical_and(x >= IGIMF_params['Ml'], x <= IGIMF_params['Mu']):
             k_IMF = IMF_integrals(x)
             return np.reciprocal(k_IMF)
+        elif np.isclose(x, IGIMF_params['Mu']):
+            k_IMF = np.divide(M_ecl, weighted_IMF_integrals(x, weighted=True))
+            return k_IMF
         else:
             return 0.
     
     def IMF_integrals(x, weighted=False):
-        # if np.logical_and(x >= IGIMF_params['Ml'], x < IGIMF_params['Mlim12']):
-        #     I = (IGIMF_params['a1'] * integrate_powerlaw(x, IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
-        #         +IGIMF_params['a2'] * integrate_powerlaw(IGIMF_params['Mlim12'], IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
-        #         +IGIMF_params['a3'] * integrate_powerlaw(IGIMF_params['Mlim23'], IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted))
-        # elif np.logical_and(x >= IGIMF_params['Mlim12'], x < IGIMF_params['Mlim23']):
-        #     I = (IGIMF_params['a2'] * integrate_powerlaw(x, IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
-        #         +IGIMF_params['a3'] * integrate_powerlaw(IGIMF_params['Mlim23'], IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted))
-        # elif np.logical_and(x >= IGIMF_params['Mlim23'], x <= IGIMF_params['Mu']):
-        #     I = IGIMF_params['a3'] * integrate_powerlaw(x, IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted)
-        # else:
-        #     I = 0.
         if np.logical_and(x >= IGIMF_params['Ml'], x < IGIMF_params['Mlim12']):
-            I = (2 * integrate_powerlaw(x, IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
-                +1 * integrate_powerlaw(IGIMF_params['Mlim12'], IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
-                +1 * integrate_powerlaw(IGIMF_params['Mlim23'], IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted))
+            comp1 = integral_powerlaw(x, IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
+            comp2 = integral_powerlaw(IGIMF_params['Mlim12'], IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted)
+            comp3 = integral_powerlaw(IGIMF_params['Mlim23'], IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted)
+            I = (IGIMF_params['a1'] * comp1
+                +IGIMF_params['a2'] * comp2
+                +IGIMF_params['a3'] * comp3)
         elif np.logical_and(x >= IGIMF_params['Mlim12'], x < IGIMF_params['Mlim23']):
-            I = (1 * integrate_powerlaw(x, IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
-                +1 * integrate_powerlaw(IGIMF_params['Mlim23'], IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted))
+            I = (IGIMF_params['a2'] * integral_powerlaw(x, IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
+                +IGIMF_params['a3'] * integral_powerlaw(IGIMF_params['Mlim23'], IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted))
         elif np.logical_and(x >= IGIMF_params['Mlim23'], x <= IGIMF_params['Mu']):
-            I = 1 * integrate_powerlaw(x, IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted)
+            I = IGIMF_params['a3'] * integral_powerlaw(x, IGIMF_params['Mu'], IGIMF_params['alpha3'], weighted=weighted)
         else:
             I = 0.
-        return I
+        return float(I)
         
     def weighted_IMF_integrals(x, weighted=True):
-        # if np.logical_and(x >= IGIMF_params['Mlim23'], x <= IGIMF_params['Mu']):
-        #     I = (IGIMF_params['a1'] * integrate_powerlaw(IGIMF_params['Ml'], IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
-        #         +IGIMF_params['a2'] * integrate_powerlaw(IGIMF_params['Mlim12'], IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
-        #         +IGIMF_params['a3'] * integrate_powerlaw(IGIMF_params['Mlim23'], x, IGIMF_params['alpha3'], weighted=weighted))
-        # elif np.logical_and(x >= IGIMF_params['Mlim12'], x < IGIMF_params['Mlim23']):
-        #     I = (IGIMF_params['a1'] * integrate_powerlaw(IGIMF_params['Ml'], IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
-        #         +IGIMF_params['a2'] * integrate_powerlaw(IGIMF_params['Mlim12'], x, IGIMF_params['alpha2'], weighted=weighted))
-        # elif np.logical_and(x >= IGIMF_params['Ml'], x < IGIMF_params['Mlim12']):
-        #     I = IGIMF_params['a1'] * integrate_powerlaw(IGIMF_params['Ml'], x, IGIMF_params['alpha1'], weighted=weighted)
-        # else:
-        #     I = 0.
         if np.logical_and(x >= IGIMF_params['Mlim23'], x <= IGIMF_params['Mu']):
-            I = (2 * integrate_powerlaw(IGIMF_params['Ml'], IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
-                +1 * integrate_powerlaw(IGIMF_params['Mlim12'], IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
-                +1 * integrate_powerlaw(IGIMF_params['Mlim23'], x, IGIMF_params['alpha3'], weighted=weighted))
+            I = (IGIMF_params['a1'] * integral_powerlaw(IGIMF_params['Ml'], IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
+                +IGIMF_params['a2'] * integral_powerlaw(IGIMF_params['Mlim12'], IGIMF_params['Mlim23'], IGIMF_params['alpha2'], weighted=weighted) 
+                +IGIMF_params['a3'] * integral_powerlaw(IGIMF_params['Mlim23'], x, IGIMF_params['alpha3'], weighted=weighted))
         elif np.logical_and(x >= IGIMF_params['Mlim12'], x < IGIMF_params['Mlim23']):
-            I = (2 * integrate_powerlaw(IGIMF_params['Ml'], IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
-                +1 * integrate_powerlaw(IGIMF_params['Mlim12'], x, IGIMF_params['alpha2'], weighted=weighted))
+            I = (IGIMF_params['a1'] * integral_powerlaw(IGIMF_params['Ml'], IGIMF_params['Mlim12'], IGIMF_params['alpha1'], weighted=weighted) 
+                +IGIMF_params['a2'] * integral_powerlaw(IGIMF_params['Mlim12'], x, IGIMF_params['alpha2'], weighted=weighted))
         elif np.logical_and(x >= IGIMF_params['Ml'], x < IGIMF_params['Mlim12']):
-            I = 2 * integrate_powerlaw(IGIMF_params['Ml'], x, IGIMF_params['alpha1'], weighted=weighted)
+            I = IGIMF_params['a1'] * integral_powerlaw(IGIMF_params['Ml'], x, IGIMF_params['alpha1'], weighted=weighted)
         else:
             I = 0.
-        return I
+        return float(I)
     
     def minimization_func(x, M_ecl):
         """
@@ -430,11 +445,9 @@ def optimal_sampling_IMF(M_ecl, IGIMF_params):
         I1 = weighted_IMF_integrals(x, weighted=True)
         I2 = IMF_integrals(x, weighted=False)
     
-        return M_ecl * I2 - I1
+        return (M_ecl) * I2 - I1
     
-    def solve_x_snake(Mtot, lower_lim, upper_lim):
-
-        # Solve numerically (bisection)
+    def solve_x(Mtot, lower_lim, upper_lim):
         x_solution = optimize.bisect(minimization_func, lower_lim, upper_lim, args=(Mtot), xtol=1e-20)
         
         # Ensure x is within valid range (a < x < U)
@@ -443,30 +456,22 @@ def optimal_sampling_IMF(M_ecl, IGIMF_params):
         else:
             raise ValueError(f"No valid solution found within the range ({lower_lim}, {upper_lim}).")
     
-    def solve_x(Mtot, lower_lim, upper_lim):
-        try:
-            sol = optimize.root_scalar(minimization_func, method='bisect', rtol=1e-20, args=(Mtot), bracket=(lower_lim, upper_lim))
-            m_max = sol.root
-        except:
-            m_max = upper_lim
-        return m_max
-    
     def execute(Mtot, lower_lim, upper_lim):
         try:
             real_upper_limit = solve_x(Mtot, lower_lim, upper_lim)
             k = k_IMF(real_upper_limit)
-            print(f'{Mtot = }, {real_upper_limit/upper_lim = }, {k = }')
             return k, real_upper_limit
         except ValueError as e:
             print(e)
 
     return execute(M_ecl, IGIMF_params['Ml'], IGIMF_params['Mu'])
-    
-
-
-
-
-
+   
+def find_nearest(array, value):
+    '''Returns the index in array s.t. array[idx] is closest to value(float)'''
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+     
 def find_closest_factors(number):
     """
     Find the pair of factors closest to a given number.
@@ -496,56 +501,59 @@ def find_closest_factors(number):
 
     return lower_factor, upper_factor
     
+    
+def solve_alpha1(A):
+    import scipy.optimize as opt
+    
+    def f(alpha):
+        
+        if abs(alpha - 1) < 1e-6 or abs(alpha - 2) < 1e-6:
+            return ValueError('alpha1 is 1 or 2')
+        
+        num = (0.5**(2 - alpha) - 0.2**(2 - alpha)) / (2 - alpha)
+        denom_part = (1 - 0.5**(1 - alpha)) / (1 - alpha)
+        denom = num + denom_part
+        
+        return num / denom - A
 
+    return opt.brentq(f, -10, 10)  - 1 # brentq solves for alpha2, returns alpha1
+    
+def Y24Martin19alpha1():
+    import pandas as pd
+    Martin19 = pd.read_csv('data/Y24Martin19.dat', delimiter=',')
+    Martin19['Z'] = np.power(10, Martin19['[Z]']+np.log10(0.0142))
 
-def normalization_IMF(alpha1, alpha2, alpha3, Mtot, lower_lim, upper_lim) -> (float, float):
-    def integral_IMF(ll, ul, power):
-        if ll < ul:
-            return np.divide(ul**(1-power) - ll**(1-power), 1-power)
-        else:
-            return 0.
-    def k(x):
-        if np.logical_and(x >= lower_lim, x < 0.5):
-            return (np.reciprocal(2 * integral_IMF(x, 0.5, alpha1) 
-                                + integral_IMF(0.5, 1., alpha2) 
-                                + integral_IMF(1., upper_lim, alpha3)))
-        if np.logical_and(x >= 0.5, x < 1.):
-            return (np.reciprocal(integral_IMF(x, 1., alpha2) 
-                                + integral_IMF(1., upper_lim, alpha3)))
-        if np.logical_and(x >= 1., x <= upper_lim):
-            return (np.reciprocal(integral_IMF(x, upper_lim, alpha3)))
-        else:
-            return 0.
-    def weighted_IMF(x):
-        if np.logical_and(x >= lower_lim, x < 0.5):
-            return (2 * integral_IMF(0.08, x, alpha1-1))
-        if np.logical_and(x >= 0.5, x < 1.):
-            return (2 * integral_IMF(0.08, 0.5, alpha1-1)
-                    + integral_IMF(0.5, x, alpha2-1))
-        if np.logical_and(x >= 1., x <= upper_lim):
-            return (2 * integral_IMF(0.08, 0.5, alpha1-1)
-                    + integral_IMF(0.5, 1., alpha2-1)
-                    + integral_IMF(1., x, alpha3-1))
-        else:
-            return 0.
-    #def integral_weighted_IMF(m, x, alpha3, ll, ul, power):
-    func = lambda x: (k(x) * weighted_IMF(x) - Mtot)
-    #sol = optimize.root_scalar(func, x0=1, x1=20, rtol=1e-8)
-    try:
-        sol = optimize.root_scalar(func, method='bisect', rtol=1e-15, bracket=(lower_lim, upper_lim))
-        m_max = sol.root
-    except:
-        m_max = upper_lim
-    #print(f'{Mtot = },\t {m_max = },\t {k(m_max)=}')
-    return k(m_max), m_max
+    Martin19['alpha1'] = Martin19['massweight_ratio_0p2to0p5div0p2to1p0'].apply(solve_alpha1)
+    return Martin19
 
+def import_Yan24all_xi():
+    import importlib.util
+    import pandas as pd
 
-def normalized(x, func, condition=None, *args, **kwargs):
-    ''' IMF behavior depending on whether or not it has been normalized '''
-    if condition:
-        if x <= condition:
-            return func
-        else:
-            return 0.
-    else:
-        return func
+    file_path = 'data/Yan24all_xi.py'
+    spec = importlib.util.spec_from_file_location("data_module", file_path)
+    data_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(data_module)
+
+    all_vars = dir(data_module)
+    dfs = []
+
+    for var in all_vars:
+        if var.startswith("Metal_"):
+            source = var.split("Metal_")[1]
+            xi_var = f"xi_{source}"
+            if xi_var in all_vars:
+                metallicity = getattr(data_module, var)
+                xi = getattr(data_module, xi_var)
+                df = pd.DataFrame({
+                    "[Z]": metallicity,
+                    "xi": xi,
+                    "source": source
+                })
+                dfs.append(df)
+
+    final_df = pd.concat(dfs, ignore_index=True)
+    
+    final_df['Z'] = np.power(10, final_df['[Z]'] + np.log10(0.0142))
+    final_df['alpha1'] = final_df['xi'].apply(solve_alpha1)
+    return final_df
