@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "igimf"
+version = "1.0.0"
+description = "IGIMF models, plots, and utilities"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "GPL-3.0-only"                      
+authors = [{ name = "Eda Gjergo" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Astronomy"
+]
+dependencies = [
+  "numpy>=1.26.4",
+  "scipy>=1.14.1",
+  "pandas>=2.2.3",
+  "matplotlib>=3.9.2",
+  "scikit-learn>=1.5.1",
+  "colorcet>=3.1.0",
+  "dill>=0.3.9",
+  "astropy>=6.0.0",
+  "plotly>=6.0.1"
+]
+
+[project.urls]
+Homepage = "https://github.com/edagjergo/pyIGIMF"
+Issues = "https://github.com/edagjergo/pyIGIMF/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["igimf", "igimf.*"]         # only your package
+exclude = ["tests*", "figs*", "data*", "grid*"]  # avoid extra top-level dirs
