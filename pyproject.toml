@@ -29,8 +29,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/edagjergo/pyIGIMF"
-Issues = "https://github.com/edagjergo/pyIGIMF/issues"
+Homepage = "https://github.com/egjergo/pyIGIMF"
+Issues = "https://github.com/egjergo/pyIGIMF/issues"
 
 [tool.setuptools]
 include-package-data = true
