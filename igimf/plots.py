@@ -6,6 +6,9 @@ import plotly.tools as tls
 import plotly.io as pio
 import plotly.graph_objects as go
 import plotly.express as px
+from importlib.resources import files
+from pathlib import Path
+from .data import open_data
 
 class Plots:
     # Plotting functions
@@ -582,9 +585,12 @@ class Plots:
     def Meclmax_vs_SFR_observations(self, SFR_v, MeclMax_list, k_ML=0.01):
         import pandas as pd
         import matplotlib.ticker as ticker
-        r13 = pd.read_csv('data/randriamanakoto13.dat', sep=',', comment='#', index_col=False)
-        l02 = pd.read_csv('data/larsen02.dat', sep=';', comment='#', index_col=False)
-        b08 = pd.read_csv('data/bastian08.dat', sep=';', comment='#', index_col=False)
+        with open_data('randriamanakoto13.dat') as data:
+            r13 = pd.read_csv(data, sep=',', comment='#', index_col=False)
+        with open_data('larsen02.dat') as data:
+            l02 = pd.read_csv(data, sep=';', comment='#', index_col=False)
+        with open_data('bastian08.dat') as data:
+            b08 = pd.read_csv(data, sep=';', comment='#', index_col=False)
         def mag_to_mass(mag_V):
             #mag_V = mag_K + 2
             Mecl_max = np.power(10, np.divide(4.79 - mag_V, 2.5)) * k_ML
@@ -609,6 +615,7 @@ class Plots:
         plt.xticks(fontsize=15)
         ax.tick_params(width=2)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig(f'figs/Meclmax_vs_SFR_observations.pdf', bbox_inches='tight')
    
     def smart_format(self,x, _):
@@ -1390,11 +1397,14 @@ class Plots:
     def Cook23_plot(self):
         import matplotlib.ticker as ticker
         import pandas as pd
-        Cook23 = pd.read_csv('data/Cook23.dat', comment='#', sep='&')
-        Cook23bin = pd.read_csv('data/Cook23bin.dat', comment='#', sep='&')
+        with open_data('Cook23.dat') as data:
+            Cook23 = pd.read_csv(data, comment='#', sep='&')
+        with open_data('Cook23bin.dat') as data:
+            Cook23bin = pd.read_csv(data, comment='#', sep='&')
         Cook23bin10 = Cook23bin.loc[Cook23bin['SFR-Method']=='1-10Myr']
         Cook23binHalpha = Cook23bin.loc[Cook23bin['SFR-Method']=='Halpha']
-        Dinnbier22 = pd.read_csv('data/Dinnbier22.dat', comment='#', sep=',')
+        with open_data('Dinnbier22.dat') as data:
+            Dinnbier22 = pd.read_csv(data, comment='#', sep=',')
         D22low = Dinnbier22.iloc[:3]
         D22high = Dinnbier22.iloc[3:]
         fig, ax = plt.subplots(1,1, figsize=(7,5))
@@ -1431,14 +1441,33 @@ class Plots:
         #ax.yaxis.set_major_formatter(formatter)
         #ax.ticklabel_format(style='plain', axis='y')  
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig('figs/Cook23.pdf', bbox_inches='tight')
         #plt.show(block=False)
 
-    def Fig11_plot(self):
+    def Fig11_plot(self, data_dir=None):
+        """Plot the Capuzzo-Dolcetta tables from a supplied reference directory.
+
+        The three original CSVs are not bundled. If data_dir is omitted, look
+        for them among the package resources and report any missing files.
+        """
         import matplotlib.ticker as ticker
-        CMOl = np.loadtxt('../data/Capuzzo-dolcetta17CMOl.csv', delimiter=',')
-        CMOu = np.loadtxt('../data/Capuzzo-dolcetta17CMOu.csv', delimiter=',')
-        SMBH = np.loadtxt('../data/Capuzzo-dolcetta17BH.csv', delimiter=',') 
+        data_root = files('igimf.data') if data_dir is None else Path(data_dir)
+        filenames = ('Capuzzo-dolcetta17CMOl.csv',
+                     'Capuzzo-dolcetta17CMOu.csv',
+                     'Capuzzo-dolcetta17BH.csv')
+        missing = [name for name in filenames if not data_root.joinpath(name).is_file()]
+        if missing:
+            raise FileNotFoundError(
+                'Fig11_plot requires reference datasets missing from '
+                f'{data_root}: {", ".join(missing)}. '
+                'Supply the original CSVs via Fig11_plot(data_dir=...).'
+            )
+        tables = []
+        for name in filenames:
+            with data_root.joinpath(name).open('rb') as data:
+                tables.append(np.loadtxt(data, delimiter=','))
+        CMOl, CMOu, SMBH = tables
         fig, ax = plt.subplots(1,1, figsize=(7,5))
         #ax.loglog(time, DTD_SNIa, color='blue', label='SNIa')
         #ax.legend(loc='best', frameon=False, fontsize=13)
@@ -1466,6 +1495,7 @@ class Plots:
         ax.set_ylim(0,11.5)
         ax.set_xlim(6, 13.7)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig('figs/Fig11.pdf', bbox_inches='tight')
         #plt.show(block=False)
               
@@ -1485,7 +1515,8 @@ class Plots:
         #cm = ListedColormap(cm(np.linspace(0, 0.8, 256)))
         #cm2 = ListedColormap(cm2(np.linspace(0, 0.8, 256)))
 
-        mmax_Mecl = pd.read_csv('data/mmaxMecl.dat', comment='#')
+        with open_data('mmaxMecl.dat') as data:
+            mmax_Mecl = pd.read_csv(data, comment='#')
 
         num_colors = len(Z_massfrac_v)
         metallicity_v = np.log10(Z_massfrac_v/solar_metallicity)
@@ -1574,6 +1605,7 @@ class Plots:
         # Existing lines
         ax[0].set_ylim(-0.5, 2.5)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig(f'figs/Mecl_vs_k_mmax_alpha1_{alpha1slope}.pdf', bbox_inches='tight')
         #plt.show(block=False)
 
@@ -1595,7 +1627,8 @@ class Plots:
         #cm = ListedColormap(cm(np.linspace(0, 0.8, 256)))
         #cm2 = ListedColormap(cm2(np.linspace(0, 0.8, 256)))
 
-        mmax_Mecl = pd.read_csv('data/mmaxMecl.dat', comment='#')
+        with open_data('mmaxMecl.dat') as data:
+            mmax_Mecl = pd.read_csv(data, comment='#')
         Mecl_v = np.log10(Mecl_v)
         num_colors = len(Z_massfrac_v)
         metallicity_v = np.log10(Z_massfrac_v/solar_metallicity)
@@ -1679,6 +1712,7 @@ class Plots:
         # f'most massive star to embedded cluster mass\n'+
         plt.suptitle(r'$m_{\rm max}-M_{\rm ecl}$ relation'+f'\n{alpha1slope} '+r'low-mass slope ($\alpha_1$)', fontsize=13, x=0.53)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig(f'figs/Mecl_vs_k_mmax_alpha1_{alpha1slope}.pdf', bbox_inches='tight')
         
 
@@ -1700,7 +1734,8 @@ class Plots:
         #cm = ListedColormap(cm(np.linspace(0, 0.8, 256)))
         #cm2 = ListedColormap(cm2(np.linspace(0, 0.8, 256)))
 
-        mmax_Mecl = pd.read_csv('data/mmaxMecl.dat', comment='#')
+        with open_data('mmaxMecl.dat') as data:
+            mmax_Mecl = pd.read_csv(data, comment='#')
         Mecl_v = np.log10(Mecl_v)
         num_colors = len(Z_massfrac_v)
         metallicity_v = np.log10(Z_massfrac_v/solar_metallicity)
@@ -1794,6 +1829,7 @@ class Plots:
         # f'most massive star to embedded cluster mass\n'+
         plt.suptitle(r'$\alpha_{\star}-M_{\rm ecl}$ relation'+f'\n{alpha1slope} '+r'low-mass slope ($\alpha_1$)', fontsize=13, x=0.53)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig(f'figs/Mecl_vs_k_mmax_alpha3alpha1_alpha1_{alpha1slope}.pdf', bbox_inches='tight')
         
      
@@ -1812,7 +1848,8 @@ class Plots:
         cm = cc.cm.CET_C6s
         cm2 = cc.cm.CET_C6s
         
-        mmax_Mecl = pd.read_csv('data/mmaxMecl.dat', comment='#')
+        with open_data('mmaxMecl.dat') as data:
+            mmax_Mecl = pd.read_csv(data, comment='#')
         Mecl_v = np.log10(Mecl_v)
         num_colors = len(Z_massfrac_v)
         metallicity_v = np.log10(Z_massfrac_v/solar_metallicity)
@@ -1871,6 +1908,7 @@ class Plots:
         cax.tick_params(labelsize=12)
         plt.suptitle(r'$\alpha_{3}-M_{\rm ecl}$ relation'+f'\n{alpha1slope} '+r'low-mass slope ($\alpha_1$)', fontsize=13, x=0.53)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig(f'figs/Mecl_vs_k_mmax_alpha3_alpha1_{alpha1slope}.pdf', bbox_inches='tight')
            
         
@@ -1973,11 +2011,13 @@ class Plots:
         
         ax.loglog(df_sel['mass_star'], np.multiply(df_sel['mass_star'],canonical_IMF)/canonical_IMF[idx], color='grey', linewidth=3, linestyle='--', alpha=1, zorder=1, label='Kroupa et al. (2001)')
                 
-        vDC24 = pd.read_csv('data/vanDokkumConroy24.dat',delimiter=',')
+        with open_data('vanDokkumConroy24.dat') as data:
+            vDC24 = pd.read_csv(data,delimiter=',')
         vDC24.columns = vDC24.columns.str.strip()
         ax.loglog(vDC24['logMass'], vDC24['logIMF'], color='#006400', linewidth=2, linestyle='-.', alpha=1, zorder=10)
         x_vDC24 = np.array([0.1,0.5,1,15.6])
-        vDC24r = pd.read_csv('data/vanDokkumConroy24range.dat',delimiter=',')
+        with open_data('vanDokkumConroy24range.dat') as data:
+            vDC24r = pd.read_csv(data,delimiter=',')
         vDC24r.columns = vDC24r.columns.str.strip()
         mid_index = len(vDC24r) // 2
         vDC24r1 = vDC24r.iloc[:mid_index]
@@ -2021,6 +2061,7 @@ class Plots:
         #fig.tight_layout(rect=[0,0,0.85,1])
         fig.tight_layout()
         fig.subplots_adjust(wspace=0., hspace=0.)
+        Path("figs").mkdir(exist_ok=True)
         fig.savefig('figs/IGIMF_massweighted_plot_concordance.pdf')
         plt.show(block=False)
         
@@ -2258,7 +2299,8 @@ class Plots:
         from matplotlib.colors import to_rgba
         import pandas as pd
         Z_massfrac_v=np.linspace(0,solar_metallicity*10)
-        alpha1Z = pd.read_fwf('data/Yan2024.dat', comment = '#')
+        with open_data('Yan2024.dat') as data:
+            alpha1Z = pd.read_fwf(data, comment = '#')
         final_df = util.import_Yan24all_xi()
         def alpha_1_func(metals):
             func = lambda Z: (1.3 + 63 * (Z - solar_metallicity))
@@ -2338,4 +2380,5 @@ class Plots:
         plt.xticks(fontsize=14)
         ax.tick_params(width=2)
         fig.tight_layout()
+        Path("figs").mkdir(exist_ok=True)
         plt.savefig(f'figs/alpha1_alternative.pdf', bbox_inches='tight')
