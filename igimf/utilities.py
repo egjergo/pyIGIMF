@@ -4,6 +4,7 @@ from scipy import optimize
 from typing import Optional
 from typing import Callable
 from typing import Any
+from .data import open_data
 
 '''
 This module contains utility functions used by the pyIGIMF package
@@ -520,20 +521,16 @@ def solve_alpha1(A):
     
 def Y24Martin19alpha1():
     import pandas as pd
-    Martin19 = pd.read_csv('data/Y24Martin19.dat', delimiter=',')
+    with open_data('Y24Martin19.dat') as data:
+        Martin19 = pd.read_csv(data, delimiter=',')
     Martin19['Z'] = np.power(10, Martin19['[Z]']+np.log10(0.0142))
 
     Martin19['alpha1'] = Martin19['massweight_ratio_0p2to0p5div0p2to1p0'].apply(solve_alpha1)
     return Martin19
 
 def import_Yan24all_xi():
-    import importlib.util
     import pandas as pd
-
-    file_path = 'data/Yan24all_xi.py'
-    spec = importlib.util.spec_from_file_location("data_module", file_path)
-    data_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(data_module)
+    from .data import Yan24all_xi as data_module
 
     all_vars = dir(data_module)
     dfs = []
