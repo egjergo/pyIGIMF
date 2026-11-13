@@ -46,3 +46,34 @@ conda activate igimf
 ```
 python examples/mwe.py
 ```
+
+## Observational data
+
+Reference tables are bundled under `igimf/data/` in both the wheel and source
+distribution. Plotting and analysis functions load these package resources, so
+they can run from any working directory. The observational plots create `figs/`
+in the current working directory for their output.
+
+`Plots.Fig11_plot()` requires three original reference files that are absent from
+this repository and are not included in the distribution:
+
+- `Capuzzo-dolcetta17CMOl.csv`
+- `Capuzzo-dolcetta17CMOu.csv`
+- `Capuzzo-dolcetta17BH.csv`
+
+If you have these files, pass their directory as
+`Plots().Fig11_plot(data_dir="/path/to/reference-data")`. Missing files produce a
+`FileNotFoundError` that lists them. No substitute data are supplied.
+
+## Installation smoke test
+
+From a checkout, with the project dependencies installed:
+
+```sh
+python -m pip install . build "setuptools>=77" wheel
+python -m unittest discover -s tests -v
+```
+
+The test builds a source distribution and a wheel, checks all bundled reference
+files, installs the wheel into a temporary directory, and runs data-dependent
+analysis and plotting functions from a separate working directory.
