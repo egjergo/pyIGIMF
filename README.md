@@ -1,7 +1,7 @@
 # pyIGIMF 
 Fast computation of the integrated galaxy-wide initial mass function (IGIMF)
 
-Direct queries to Eda Gjergo (Nanjing University) <GalacticCEM@gmail.com>
+Direct queries to Eda Gjergo (Beihang University) <GalacticCEM@gmail.com>
 
 ## Default use
 
